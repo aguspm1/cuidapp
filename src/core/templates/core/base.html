@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuida APP - Panel de Control</title>
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+<body class="modo-tutor">
+
+    <header class="main-header">
+        <div class="header-container">
+            <h1 class="logo-texto">Cuida APP</h1>
+            
+            <nav class="nav-principal">
+                <a href="{% url 'dashboard' %}">Inicio</a>
+                <a href="#">Perfil</a>
+                
+                {% if user.is_authenticated %}
+                    <form action="{% url 'logout' %}" method="post" class="form-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-salir">Cerrar Sesión</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}">Iniciar Sesión</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    {% block content %}
+    {% endblock %}
+
+    <footer style="text-align: center; padding: 20px; color: #888; font-size: 0.8rem;">
+        &copy; 2026 Cuida APP - Proyecto IFTS 18
+    </footer>
+
+</body>
+</html>

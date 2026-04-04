@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card auth-card-compact">
+        <h2 class="card-title">Crear Cuenta</h2>
+        
+        <form method="POST" class="auth-form-django">
+            {% csrf_token %}
+            
+            {# Campo Usuario y Email (Ocupan ancho completo) #}
+            <div class="form-group">
+                <label>Nombre de usuario</label>
+                {{ form.username }}
+            </div>
+            
+            <div class="form-group">
+                <label>Dirección de email</label>
+                {{ form.email }}
+            </div>
+
+            {# FILA DOBLE: Nombre y Apellido #}
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    {{ form.first_name }}
+                </div>
+                <div class="form-group">
+                    <label>Apellido</label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+
+            {# FILA DOBLE: Contraseñas #}
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    {{ form.password1 }}
+                </div>
+                <div class="form-group">
+                    <label>Confirmación</label>
+                    {{ form.password2 }}
+                </div>
+            </div>
+
+            {# Rol #}
+            <div class="form-group">
+                <label>¿Quién sos?</label>
+                {{ form.rol }}
+            </div>
+            
+            <button type="submit" class="btn-primary">Registrarse</button>
+        </form>
+        
+        <div class="auth-footer">
+            ¿Ya tenés cuenta? <a href="{% url 'login' %}" class="link-neon">Iniciá sesión</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

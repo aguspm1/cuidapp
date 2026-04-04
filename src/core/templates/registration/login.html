@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card">
+        <h2 class="card-title">Iniciar Sesión</h2>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_username">Usuario</label>
+                <input type="text" name="username" id="id_username" class="form-control" placeholder="Tu nombre de usuario" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password">Contraseña</label>
+                <input type="password" name="password" id="id_password" class="form-control" placeholder="******" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">Entrar</button>
+        </form>
+        
+        <div class="auth-footer">
+            ¿No tenés cuenta? <a href="{% url 'registro' %}" class="link-neon">Registrate acá</a>
+        </div>
+    </div>
+</main>
+{% endblock %}

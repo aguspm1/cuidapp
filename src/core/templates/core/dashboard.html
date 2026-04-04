@@ -1,0 +1,146 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content">
+
+    {# CABECERA DE PERFIL #}
+    <div class="card-sobria" style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="width: 45px; height: 45px; background: var(--azul-profundo); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                {{ nombre_anciano|slice:":1"|upper }}
+            </div>
+            <div>
+                <h3 style="margin:0;">{{ nombre_anciano }}</h3>
+                <small style="color: #666;">
+                    {% if perfil.rol == 'tutor' %} Monitoreando a cargo {% else %} Mi perfil {% endif %}
+                </small>
+            </div>
+        </div>
+        
+        {% if nombre_anciano != "No vinculado" %}
+            <span style="background: #e8f5e9; color: #2e7d32; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">Conectado</span>
+        {% else %}
+            <a href="{% url 'vincular_anciano' %}" style="background: var(--celeste-neon); color: var(--azul-profundo); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-decoration: none;">+ Vincular ahora</a>
+        {% endif %}
+    </div>
+
+    {# ESTADO DEL DISPOSITIVO #}
+    <div class="status-row">
+        <div class="status-card-mini"><span>📍</span><strong>Recoleta, CABA</strong></div>
+        <div class="status-card-mini"><span>🔋</span><strong>89% Batería</strong></div>
+        <div class="status-card-mini"><span>📶</span><strong>Señal Excelente</strong></div>
+    </div>
+
+    {# ATAJOS #}
+    <div class="grid-shortcuts">
+        <a href="#" class="shortcut-btn">
+            <span class="shortcut-icon">📅</span>
+            <span>Calendario</span>
+        </a>
+        <a href="#seccion-meds" class="shortcut-btn active">
+            <span class="shortcut-icon">💊</span>
+            <span>Medicamentos</span>
+        </a>
+        <a href="#" class="shortcut-btn">
+            <span class="shortcut-icon">🖼️</span>
+            <span>Fotos</span>
+        </a>
+        <a href="#" class="shortcut-btn">
+            <span class="shortcut-icon">📊</span>
+            <span>Mediciones</span>
+        </a>
+    </div>
+
+    {# SECCIÓN DE MEDICAMENTOS #}
+    <div id="seccion-meds" class="card-sobria">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin:0;">Plan de Medicación Activo</h3>
+            {% if nombre_anciano != "No vinculado" %}
+                <a href="{% url 'nuevo_medicamento' %}" style="color: var(--azul-profundo); font-weight: bold; text-decoration: none; border-bottom: 2px solid var(--celeste-neon);">+ Cargar Nuevo</a>
+            {% endif %}
+        </div>
+
+        <table class="tabla-meds">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Frecuencia</th>
+                    <th>Stock</th>
+                    <th style="width: 25%;">Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in remedios %}
+                <tr>
+                    <td>
+                        <strong>{{ r.nombre }}</strong><br>
+                        <small style="color:#888;">Toma {{ r.dosis }} por dia</small>
+                    </td>
+                    <td>
+                        {{ r.horario }}<br>
+                        <small style="color:#2c5282;">Cada {{ r.cada_cuantas_horas }}hs</small>
+                    </td>
+                    <td>
+                        <span class="{% if r.stock_actual <= r.stock_critico %}badge-stock-alert{% endif %}">
+                            {{ r.stock_actual }} / {{ r.stock_inicial }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="progress-bg">
+                            <div class="progress-fill {% if r.stock_actual <= r.stock_critico %}bg-critico{% endif %}" 
+                                 style="width: {{ r.porcentaje_restante }}%;"></div>
+                        </div>
+                        <small style="color:#999; font-size: 0.7rem;">{{ r.porcentaje_restante }}% disponible</small>
+                    </td>
+                    <td>
+                        {# Botón de Reposición Rápida con un icono #}
+                        <form action="{% url 'reponer_caja' r.pk %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-reponer-mini" title="Reponer Caja Completa">
+                                📦 Reponer
+                            </button>
+                        </form>
+                        <form action="{% url 'eliminar_medicamento' r.pk %}" method="POST" onsubmit="return confirm('¿Estás seguro de que querés eliminar {{ r.nombre }}? Esta acción no se puede deshacer.');">
+                             {% csrf_token %}
+                            <button type="submit" class="btn-eliminar-mini" title="Eliminar Medicamento">
+                                🗑️ Eliminar
+                        </button>
+                        </form>
+                    </td>
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:30px; color:#999;">
+                        No hay medicamentos registrados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# SEMÁFORO DE REPOSICIÓN #}
+    <div class="card-sobria">
+        <div class="semaforo-linea {% if bajo_stock %}bg-rojo{% else %}bg-verde{% endif %}" style="height: 6px; border-radius: 3px; margin-bottom: 10px;"></div>
+        <h4 style="margin:0 0 5px 0;">ESTADO DE REPOSICIÓN</h4>
+        {% if bajo_stock %}
+            <p style="color: var(--rojo-alerta); font-size: 0.9rem;">
+                ⚠️ <strong>Atención:</strong> Hay medicamentos alcanzando el nivel crítico.
+            </p>
+            <ul style="color: var(--rojo-alerta); font-size: 0.85rem; margin-top: 5px;">
+                {% for r in lista_bajo_stock %}
+                    <li>• {{ r.nombre }} (Quedan {{ r.stock_actual }} unidades)</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: var(--verde-ok); font-size: 0.9rem;">
+                {% if remedios %} Todo en orden. Stock suficiente para los próximos días. {% else %} Sin datos de stock. {% endif %}
+            </p>
+        {% endif %}
+    </div>
+
+</main>
+{% endblock %}
