@@ -368,3 +368,9 @@ body {
     color: white;
     transform: scale(1.05);
 }
+
+/* Ajuste para el contenedor de la tabla */
+.tabla-meds td {
+    padding: 12px 10px;
+    vertical-align: middle;
+}
