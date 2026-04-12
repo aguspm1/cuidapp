@@ -1,0 +1,123 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card">
+        <h2 class="card-title">📝 Cargar Datos de Medición</h2>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+            {% if foto.imagen %}
+            <img src="{{ foto.imagen.url }}" style="width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px;">
+            {% endif %}
+            
+            {% if foto.comentario_ana %}
+            <p style="margin-top: 15px; color: #333; background: #e8f5e9; padding: 15px; border-left: 4px solid #2e7d32; border-radius: 6px;">
+                <strong>Comentario de Ana:</strong> "{{ foto.comentario_ana }}"
+            </p>
+            {% endif %}
+            
+            <p style="margin-top: 10px; color: #999; font-size: 0.95rem;">
+                📸 Subida: {{ foto.fecha_subida|date:"d/m/Y H:i" }}
+            </p>
+        </div>
+
+        <form method="POST" class="auth-form-django">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="tipo">Tipo de Medición</label>
+                <select name="tipo" id="tipo" required style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+                    <option value="">-- Seleccionar tipo --</option>
+                    <option value="presion">🩸 Presión Arterial</option>
+                    <option value="peso">⚖️ Peso</option>
+                    <option value="glucosa">🩹 Glucosa</option>
+                </select>
+            </div>
+
+            <div id="presion-fields" class="form-row-2" style="display: none; gap: 15px;">
+                <div class="form-group">
+                    <label for="valor_1">Sistólica (mmHg)</label>
+                    <input type="number" id="valor_1" step="0.1" style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                </div>
+                <div class="form-group">
+                    <label for="valor_2">Diastólica (mmHg)</label>
+                    <input type="number" id="valor_2" step="0.1" style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                </div>
+            </div>
+
+            <div id="peso-fields" class="form-group" style="display: none;">
+                <label for="valor_peso">Peso (kg)</label>
+                <input type="number" id="valor_peso" name="valor_1" step="0.1" style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <div id="glucosa-fields" class="form-group" style="display: none;">
+                <label for="valor_glucosa">Glucosa (mg/dL)</label>
+                <input type="number" id="valor_glucosa" name="valor_1" step="0.1" style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <input type="hidden" id="valor_1_hidden" name="valor_1">
+            <input type="hidden" id="valor_2_hidden" name="valor_2">
+
+            <div class="form-group">
+                <label for="observaciones">Observaciones</label>
+                <textarea name="observaciones" id="observaciones" rows="4" placeholder="Ej: Paciente tomó medicamento antes de medir..." style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Guardar Datos ✓</button>
+                <a href="{% url 'fotos_mediciones' %}" class="btn-salir" style="flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 16px;">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('tipo');
+    const presionFields = document.getElementById('presion-fields');
+    const pesoFields = document.getElementById('peso-fields');
+    const glucosaFields = document.getElementById('glucosa-fields');
+    
+    const valor1Input = document.getElementById('valor_1_hidden');
+    const valor2Input = document.getElementById('valor_2_hidden');
+    
+    const sistolicaInput = presionFields.querySelector('#valor_1');
+    const diastolicaInput = presionFields.querySelector('#valor_2');
+    const pesoInput = document.getElementById('valor_peso');
+    const glucosaInput = document.getElementById('valor_glucosa');
+
+    tipoSelect.addEventListener('change', function() {
+        // Ocultar todos
+        presionFields.style.display = 'none';
+        pesoFields.style.display = 'none';
+        glucosaFields.style.display = 'none';
+        
+        // Mostrar según selección
+        if (this.value === 'presion') {
+            presionFields.style.display = 'grid';
+        } else if (this.value === 'peso') {
+            pesoFields.style.display = 'block';
+        } else if (this.value === 'glucosa') {
+            glucosaFields.style.display = 'block';
+        }
+    });
+    
+    // Antes de enviar el form
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const tipo = tipoSelect.value;
+        
+        if (tipo === 'presion') {
+            valor1Input.value = sistolicaInput.value;
+            valor2Input.value = diastolicaInput.value;
+        } else if (tipo === 'peso') {
+            valor1Input.value = pesoInput.value;
+            valor2Input.value = '';
+        } else if (tipo === 'glucosa') {
+            valor1Input.value = glucosaInput.value;
+            valor2Input.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}

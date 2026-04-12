@@ -2,57 +2,64 @@
 
 {% block content %}
 <main class="main-content auth-container">
-    <div class="card-sobria auth-card auth-card-compact">
-        <h2 class="card-title">Cargar Medicación</h2>
+    <div class="card-sobria auth-card">
+        <h2 class="card-title">💊 Cargar Medicación</h2>
         
         <form method="POST" class="auth-form-django">
             {% csrf_token %}
             
+            {% if form.non_field_errors %}
+                <div class="errorlist">
+                    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                </div>
+            {% endif %}
+            
             <div class="form-group">
-                <label>{{ form.nombre.label }}</label>
+                <label for="id_nombre">{{ form.nombre.label }}</label>
                 {{ form.nombre }}
+                {% if form.nombre.errors %}<div class="errorlist">{{ form.nombre.errors }}</div>{% endif %}
             </div>
 
             <div class="form-row-2">
-                <div class="form-group" style="display: flex; align-items: center; gap: 8px; padding-top: 25px;">
+                <div class="form-group" style="display: flex; align-items: center; gap: 12px; padding-top: 35px;">
                     {{ form.horario_fijo }} <strong>{{ form.horario_fijo.label }}</strong>
                 </div>
                 <div class="form-group">
-                    <label>Horario / Momento</label>
+                    <label for="id_horario">Horario / Momento</label>
                     {{ form.horario }}
                 </div>
             </div>
 
             <div class="form-row-2">
                 <div class="form-group">
-                    <label>{{ form.cada_cuantas_horas.label }}</label>
+                    <label for="id_cada_cuantas_horas">{{ form.cada_cuantas_horas.label }}</label>
                     {{ form.cada_cuantas_horas }}
                 </div>
                 <div class="form-group">
-                    <label>{{ form.dosis.label }}</label>
+                    <label for="id_dosis">{{ form.dosis.label }}</label>
                     {{ form.dosis }}
                 </div>
             </div>
 
             <div class="form-row-2">
                 <div class="form-group">
-                    <label>{{ form.stock_actual.label }}</label>
+                    <label for="id_stock_actual">{{ form.stock_actual.label }}</label>
                     {{ form.stock_actual }}
                 </div>
                 <div class="form-group">
-                    <label>{{ form.stock_inicial.label }}</label>
-                    {{ form.stock_inicial }}
+                    <label for="id_stock_total">{{ form.stock_total.label }}</label>
+                    {{ form.stock_total }}
                 </div>
             </div>
 
             <div class="form-group">
-                <label>{{ form.stock_critico.label }}</label>
-                {{ form.stock_critico }}
+                <label for="id_frecuencia">Frecuencia</label>
+                {{ form.frecuencia }}
             </div>
 
-            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 15px;">
-                <button type="submit" class="btn-primary">Guardar</button>
-                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration:none; display:flex; align-items:center; justify-content:center; width: 100%;">Cancelar</a>
+            <div class="form-actions" style="display: flex; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Guardar Medicación</button>
+                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration:none; display:flex; align-items:center; justify-content:center; flex: 0.8; padding: 16px;">Cancelar</a>
             </div>
         </form>
     </div>
@@ -63,15 +70,19 @@
     const input = document.getElementById('input_horario');
 
     function actualizarInput() {
-        if (check.checked) {
-            input.type = "time";
-        } else {
-            input.type = "text";
-            input.placeholder = "Ej: Antes de acostarse";
+        if (check && input) {
+            if (check.checked) {
+                input.type = "time";
+            } else {
+                input.type = "text";
+                input.placeholder = "Ej: Antes de acostarse";
+            }
         }
     }
 
-    check.addEventListener('change', actualizarInput);
-    window.onload = actualizarInput; // Para que funcione al cargar
+    if (check) {
+        check.addEventListener('change', actualizarInput);
+        window.onload = actualizarInput;
+    }
 </script>
 {% endblock %}

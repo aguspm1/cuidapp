@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuida APP - Panel de Control</title>
-    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body class="modo-tutor">
 
@@ -15,7 +15,7 @@
             
             <nav class="nav-principal">
                 <a href="{% url 'dashboard' %}">Inicio</a>
-                <a href="#">Perfil</a>
+                <a href="{% url 'perfil_tutor' %}">Perfil</a>
                 
                 {% if user.is_authenticated %}
                     <form action="{% url 'logout' %}" method="post" class="form-inline">
@@ -32,9 +32,12 @@
     {% block content %}
     {% endblock %}
 
-    <footer style="text-align: center; padding: 20px; color: #888; font-size: 0.8rem;">
+    <footer style="text-align: center; padding: 35px; color: #999; font-size: 0.95rem; background: #f8fafc; margin-top: 50px;">
         &copy; 2026 Cuida APP - Proyecto IFTS 18
     </footer>
+
+    {% block scripts %}
+    {% endblock %}
 
 </body>
 </html>

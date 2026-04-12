@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content">
+    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 30px;">
+        ← Volver al Dashboard
+    </a>
+
+    <div style="max-width: 1200px; margin: 0 auto;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">📊 Mediciones de {{ perfil.user.first_name }}</h2>
+            <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px;">
+                Ver Fotos 📸
+            </a>
+        </div>
+
+        {# Presión Arterial #}
+        {% if mediciones_presion %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #e74c3c;">
+            <h3 style="color: #e74c3c; margin-bottom: 20px; font-size: 1.3rem;">🩸 Presión Arterial</h3>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #e74c3c; border-bottom: 2px solid #e74c3c;">Fecha</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #e74c3c; border-bottom: 2px solid #e74c3c;">Sistólica</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #e74c3c; border-bottom: 2px solid #e74c3c;">Diastólica</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #e74c3c; border-bottom: 2px solid #e74c3c;">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in mediciones_presion %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 15px;">{{ med.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td style="padding: 15px; font-weight: 600; font-size: 1.1rem;">{{ med.valor_1|floatformat:0 }} mmHg</td>
+                            <td style="padding: 15px; font-weight: 600; font-size: 1.1rem;">{{ med.valor_2|floatformat:0 }} mmHg</td>
+                            <td style="padding: 15px; color: #666;">{{ med.observaciones|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; text-align: center; color: #999;">
+            <p style="font-size: 1.1rem;">No hay mediciones de Presión Arterial registradas</p>
+        </div>
+        {% endif %}
+
+        {# Peso #}
+        {% if mediciones_peso %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #3498db;">
+            <h3 style="color: #3498db; margin-bottom: 20px; font-size: 1.3rem;">⚖️ Peso</h3>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #3498db; border-bottom: 2px solid #3498db;">Fecha</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #3498db; border-bottom: 2px solid #3498db;">Peso</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #3498db; border-bottom: 2px solid #3498db;">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in mediciones_peso %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 15px;">{{ med.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td style="padding: 15px; font-weight: 600; font-size: 1.1rem;">{{ med.valor_1|floatformat:1 }} kg</td>
+                            <td style="padding: 15px; color: #666;">{{ med.observaciones|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; text-align: center; color: #999;">
+            <p style="font-size: 1.1rem;">No hay mediciones de Peso registradas</p>
+        </div>
+        {% endif %}
+
+        {# Glucosa #}
+        {% if mediciones_glucosa %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #2ecc71;">
+            <h3 style="color: #2ecc71; margin-bottom: 20px; font-size: 1.3rem;">🩹 Glucosa</h3>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #2ecc71; border-bottom: 2px solid #2ecc71;">Fecha</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #2ecc71; border-bottom: 2px solid #2ecc71;">Nivel</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 700; color: #2ecc71; border-bottom: 2px solid #2ecc71;">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in mediciones_glucosa %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 15px;">{{ med.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            <td style="padding: 15px; font-weight: 600; font-size: 1.1rem;">{{ med.valor_1|floatformat:0 }} mg/dL</td>
+                            <td style="padding: 15px; color: #666;">{{ med.observaciones|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; text-align: center; color: #999;">
+            <p style="font-size: 1.1rem;">No hay mediciones de Glucosa registradas</p>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}

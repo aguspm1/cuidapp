@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content">
+    <div class="card-sobria" style="border-top: 6px solid var(--azul-profundo); padding: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div>
+                <h2 style="margin: 0; color: #1e3a8a; font-size: 1.7rem;">📅 Calendario de {{ nombre_anciano }}</h2>
+                <p style="margin: 8px 0 0; color: #666; font-size: 1.05rem;">Gestioná turnos médicos y eventos familiares</p>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 14px 25px; text-decoration: none; font-size: 1rem;">+ Agregar Evento</a>
+                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration: none; padding: 14px 25px; border: 2px solid #ccc; border-radius: 8px; color: #333; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    ⬅ Volver
+                </a>
+            </div>
+        </div>
+
+        {# EL CONTENEDOR DEL CALENDARIO #}
+        <div id="calendar-full" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; min-height: 700px;"></div>
+    </div>
+</main>
+
+<script id="todos-eventos-json" type="application/json">
+    [
+        {% for e in todos_eventos %}
+        {
+            "title": "{{ e.titulo|escapejs }}",
+            "start": "{{ e.fecha_hora|date:'Y-m-d\TH:i:s' }}",
+            "color": "{% if e.tipo == 'medico' %}#3182ce{% elif e.tipo == 'social' %}#38a169{% else %}#1e3a8a{% endif %}",
+            "extendedProps": {
+                "lugar": "{{ e.lugar|escapejs }}",
+                "tipo": "{{ e.tipo }}"
+            }
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar-full');
+        const dataEl = document.getElementById('todos-eventos-json');
+        
+        if (calendarEl && dataEl) {
+            const eventos = JSON.parse(dataEl.textContent);
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+                events: eventos,
+                eventClick: function(info) {
+                    alert('Evento: ' + info.event.title + '\nLugar: ' + (info.event.extendedProps.lugar || 'No especificado'));
+                }
+            });
+            calendar.render();
+        }
+    });
+</script>
+{% endblock %}

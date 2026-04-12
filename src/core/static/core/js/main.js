@@ -1,12 +1,31 @@
-// Este mensaje aparecerá en la consola del navegador para confirmar que funciona
-console.log("Cuida APP: JavaScript cargado correctamente desde el pendrive.");
+console.log("Archivo main.js cargado correctamente");
 
+function mostrarPestana(pestana) {
+    const secMeds = document.getElementById('seccion-meds');
+    const secCal = document.getElementById('seccion-cal');
+    const btnMeds = document.getElementById('btn-tab-meds');
+    const btnCal = document.getElementById('btn-tab-cal');
 
-
-// Si el usuario toca el botón de "Tomar", podemos simular una acción de App
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.textContent === 'TOMAR AHORA') {
-        alert("¡Registro guardado! Se le notificará a tu tutor.");
-        // Aquí después conectaremos con la base de datos para bajar el stock
+    if (!secMeds || !secCal || !btnMeds || !btnCal) {
+        console.error("No se encontraron los elementos necesarios");
+        return;
     }
-});
+
+    if (pestana === 'calendario') {
+        secMeds.style.display = 'none';
+        secCal.style.display = 'block';
+        
+        btnMeds.classList.remove('active');
+        btnCal.classList.add('active');
+        
+        console.log("Mostrando Calendario");
+    } else if (pestana === 'medicamentos') {
+        secMeds.style.display = 'block';
+        secCal.style.display = 'none';
+        
+        btnCal.classList.remove('active');
+        btnMeds.classList.add('active');
+        
+        console.log("Mostrando Medicamentos");
+    }
+}

@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="card-sobria auth-card">
+        <h2 class="card-title">📅 Agendar Nuevo Evento</h2>
+        <p style="margin-bottom: 25px; color: #666; font-size: 1.05rem;">
+            Completá los datos para que aparezcan en el calendario de <strong>{{ nombre_anciano }}</strong>.
+        </p>
+
+        <form method="POST" class="auth-form-django">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="errorlist">
+                    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label>Título del Evento</label>
+                <input type="text" name="titulo" placeholder="Ej: Turno con Cardiólogo" required style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label>Tipo de Evento</label>
+                    <select name="tipo" required style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+                        <option value="medico">🩺 Médico / Turno</option>
+                        <option value="social">👥 Visita / Social</option>
+                        <option value="actividad">🎨 Actividad / Taller</option>
+                        <option value="otro">📌 Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha y Hora</label>
+                    <input type="datetime-local" name="fecha_hora" required style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Lugar / Dirección</label>
+                <input type="text" name="lugar" placeholder="Ej: Clínica Santa Lucía" style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Notas adicionales</label>
+                <textarea name="descripcion" rows="4" placeholder="Ej: Llevar estudios previos..." style="width: 100%; padding: 14px 15px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">Guardar en Agenda</button>
+                <a href="{% url 'calendario' %}" class="btn-salir" style="color: var(--azul-profundo); border-color: var(--azul-profundo); width: 35%; text-decoration: none; display: flex; align-items: center; justify-content: center; padding: 16px;">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

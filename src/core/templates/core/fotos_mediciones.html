@@ -1,0 +1,131 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content">
+    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 30px;">
+        ← Volver al Dashboard
+    </a>
+
+    <div style="max-width: 1200px; margin: 0 auto;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">📸 Documentos Médicos</h2>
+            <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px;">
+                Ver Mediciones 📊
+            </a>
+        </div>
+
+        {# Filtros por tipo #}
+        <div class="doc-filter-buttons">
+            <a href="?tipo=" class="doc-filter-btn doc-filter-todos">📋 Todos</a>
+            <a href="?tipo=medicion" class="doc-filter-btn doc-filter-medicion">📏 Mediciones</a>
+            <a href="?tipo=receta" class="doc-filter-btn doc-filter-receta">💊 Recetas</a>
+            <a href="?tipo=indicacion" class="doc-filter-btn doc-filter-indicacion">📝 Indicaciones</a>
+            <a href="?tipo=otro" class="doc-filter-btn doc-filter-otro">📄 Otros</a>
+        </div>
+
+        {# Documentos Pendientes de Procesar #}
+        {% if fotos_pendientes %}
+        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #e74c3c;">
+            <h3 style="color: #e74c3c; margin-bottom: 20px; font-size: 1.3rem;">⏳ Pendientes de Revisar ({{ fotos_pendientes|length }})</h3>
+            
+            <div class="doc-grid">
+                {% for foto in fotos_pendientes %}
+                <div class="doc-card">
+                    
+                    {# Etiqueta de Tipo #}
+                    <div class="doc-card-type {% if foto.tipo == 'medicion' %}medicion{% elif foto.tipo == 'receta' %}receta{% elif foto.tipo == 'indicacion' %}indicacion{% else %}otro{% endif %}">
+                        {{ foto.get_tipo_display }}
+                    </div>
+                    
+                    {# Imagen #}
+                    {% if foto.imagen %}
+                    <img src="{{ foto.imagen.url }}" class="doc-card-image">
+                    {% else %}
+                    <div class="doc-card-no-image">Sin imagen</div>
+                    {% endif %}
+                    
+                    {# Info #}
+                    <div class="doc-card-content">
+                        <p class="doc-card-date">{{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
+                        
+                        {% if foto.comentario_ana %}
+                        <p class="doc-card-comment">
+                            <strong>Ana:</strong> "{{ foto.comentario_ana }}"
+                        </p>
+                        {% endif %}
+                        
+                        {# Acciones según tipo #}
+                        {% if foto.tipo == 'medicion' %}
+                        <a href="{% url 'cargar_dato' foto.id %}" class="btn-primary" style="width: 100%; text-decoration: none; text-align: center; display: block; margin-top: 15px; padding: 12px; font-size: 0.95rem;">
+                            + Cargar Datos
+                        </a>
+                        {% else %}
+                        <div class="doc-card-actions">
+                            <button onclick="processDocument({{ foto.id }})" class="btn-primary" style="padding: 12px; font-size: 0.9rem;">
+                                ✓ Revisar
+                            </button>
+                            <button onclick="rejectDocument({{ foto.id }})" class="btn-reject">
+                                ✗ Rechazar
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card-sobria" style="padding: 40px; margin-bottom: 30px; text-align: center; background: #f0f4f8; border: 2px dashed #00d4ff;">
+            <p style="font-size: 1.2rem; color: #666; margin: 0;">✓ No hay documentos pendientes de revisar</p>
+        </div>
+        {% endif %}
+
+        {# Documentos ya Procesados #}
+        {% if fotos_procesadas %}
+        <div class="card-sobria" style="padding: 30px; border-top: 6px solid #2ecc71;">
+            <h3 style="color: #2ecc71; margin-bottom: 20px; font-size: 1.3rem;">✓ Procesados ({{ fotos_procesadas|length }})</h3>
+            
+            <div class="doc-grid-processed">
+                {% for foto in fotos_procesadas %}
+                <div class="doc-card-processed-item">
+                    
+                    {# Etiqueta tipo pequeño #}
+                    <div class="doc-card-type {% if foto.tipo == 'medicion' %}medicion{% elif foto.tipo == 'receta' %}receta{% elif foto.tipo == 'indicacion' %}indicacion{% else %}otro{% endif %}">
+                        {{ foto.get_tipo_display }}
+                    </div>
+                    
+                    {# Imagen #}
+                    {% if foto.imagen %}
+                    <img src="{{ foto.imagen.url }}" class="doc-card-processed-image">
+                    {% else %}
+                    <div class="doc-card-processed-no-image">Sin imagen</div>
+                    {% endif %}
+                    
+                    <div class="doc-card-processed-footer">
+                        <p class="doc-card-processed-date">{{ foto.fecha_subida|date:"d/m/Y" }}</p>
+                        <p class="doc-card-processed-status">Revisado ✓</p>
+                        {% if foto.comentario_luis %}
+                        <p class="doc-card-processed-note">{{ foto.comentario_luis|truncatewords:10 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+<script>
+function processDocument(fotoId) {
+    alert('Documento revisado: ' + fotoId);
+}
+
+function rejectDocument(fotoId) {
+    alert('Documento rechazado: ' + fotoId);
+}
+</script>
+{% endblock %}

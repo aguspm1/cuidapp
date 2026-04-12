@@ -8,6 +8,15 @@
         
         <form method="POST">
             {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="errorlist">
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
             <div class="form-group">
                 <label for="id_username">Usuario</label>
                 <input type="text" name="username" id="id_username" class="form-control" placeholder="Tu nombre de usuario" required>
