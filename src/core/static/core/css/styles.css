@@ -4,10 +4,10 @@
 
 /* ----- VARIABLES Y COLORES ----- */
 :root {
-    --azul-profundo: #3f51b5;
-    --celeste-neon: #00d4ff;
+    --azul-profundo: #061569;
+    --celeste-neon: #207181;
     --texto-oscuro: #1a1a1a;
-    --evento-medico: #00d4ff;
+    --evento-medico: #103b44;
     --gris-claro: #f0f4f8;
     --gris-borde: #e2e8f0;
     --sombra-leve: 0 2px 8px rgba(0,0,0,0.08);
