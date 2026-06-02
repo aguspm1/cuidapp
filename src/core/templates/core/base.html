@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body class="modo-tutor">
-
+ 
     <header class="main-header">
         <div class="header-container">
             <h1 class="logo-texto">Cuida APP</h1>
@@ -28,16 +28,37 @@
             </nav>
         </div>
     </header>
-
+ 
+    {% if messages %}
+    <div class="mensajes-sistema">
+        {% for message in messages %}
+        <div class="mensaje-alerta mensaje-{{ message.tags }}">
+            {{ message }}
+            <button class="mensaje-cerrar" onclick="this.parentElement.remove()">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+ 
     {% block content %}
     {% endblock %}
-
+ 
     <footer style="text-align: center; padding: 35px; color: #999; font-size: 0.95rem; background: #f8fafc; margin-top: 50px;">
         &copy; 2026 Cuida APP - Proyecto IFTS 18
     </footer>
-
+ 
     {% block scripts %}
     {% endblock %}
-
+ 
+    <script>
+    setTimeout(function() {
+        document.querySelectorAll('.mensaje-alerta').forEach(function(el) {
+            el.style.opacity = '0';
+            el.style.transition = 'opacity 0.5s';
+            setTimeout(function() { el.remove(); }, 500);
+        });
+    }, 4000);
+    </script>
+ 
 </body>
 </html>
