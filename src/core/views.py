@@ -96,37 +96,50 @@ def vincular_anciano(request):
     return render(request, 'core/vincular.html')
 
 # 4. EVENTOS Y CALENDARIO
-@login_required
+@login_required                                          # FIX: faltaba en la original
 def calendario_eventos(request):
     paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
     target = paciente_perfil.user if paciente_perfil else request.user
-    
+ 
+    nombre = target.get_full_name() or target.username   # FIX: muestra nombre real
+ 
     return render(request, 'core/calendario.html', {
-        'todos_eventos': EventoCalendario.objects.filter(paciente=target),
-        'nombre_anciano': target.username
+        'todos_eventos': EventoCalendario.objects.filter(paciente=target).order_by('fecha_hora'),
+        'nombre_anciano': nombre,
     })
-
+ 
+ 
 @login_required
 def nuevo_evento(request):
     paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
     target = paciente_perfil.user if paciente_perfil else request.user
-    
+    nombre = target.get_full_name() or target.username
+ 
     if request.method == 'POST':
         EventoCalendario.objects.create(
-            paciente=target, 
-            titulo=request.POST.get('titulo'), 
-            fecha_hora=request.POST.get('fecha_hora'), 
-            descripcion=request.POST.get('descripcion')
+            paciente    = target,
+            titulo      = request.POST.get('titulo'),
+            fecha_hora  = request.POST.get('fecha_hora'),
+            descripcion = request.POST.get('descripcion', ''),
+            tipo        = request.POST.get('tipo', 'otro'),   # FIX: se guardaba el tipo
+            lugar       = request.POST.get('lugar', ''),      # FIX: se guardaba el lugar
         )
-        messages.success(request, "Evento agendado.")
-        return redirect('dashboard')
-    return render(request, 'core/nuevo_evento.html')
-
+        messages.success(request, "Evento agendado correctamente.")
+        return redirect('calendario')                          # FIX: redirige al calendario
+ 
+    return render(request, 'core/nuevo_evento.html', {'nombre_anciano': nombre})
+ 
+ 
 @login_required
 def eliminar_evento(request, pk):
     if request.method == 'POST':
-        get_object_or_404(EventoCalendario, pk=pk, paciente__perfilpaciente__tutor=request.user).delete()
-    return redirect('dashboard')
+        get_object_or_404(
+            EventoCalendario,
+            pk=pk,
+            paciente__perfilpaciente__tutor=request.user
+        ).delete()
+        messages.success(request, "Evento eliminado.")
+    return redirect('calendario')     
 
 # 5. MEDICAMENTOS
 @login_required

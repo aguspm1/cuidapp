@@ -1,69 +1,116 @@
+L
 {% extends 'core/base.html' %}
 {% load static %}
-
+ 
 {% block content %}
 <main class="main-content">
     <div class="card-sobria" style="border-top: 6px solid var(--azul-profundo); padding: 40px;">
+ 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <div>
-                <h2 style="margin: 0; color: #1e3a8a; font-size: 1.7rem;">📅 Calendario de {{ nombre_anciano }}</h2>
+                <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ nombre_anciano }}</h2>
                 <p style="margin: 8px 0 0; color: #666; font-size: 1.05rem;">Gestioná turnos médicos y eventos familiares</p>
             </div>
             <div style="display: flex; gap: 15px;">
-                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 14px 25px; text-decoration: none; font-size: 1rem;">+ Agregar Evento</a>
-                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration: none; padding: 14px 25px; border: 2px solid #ccc; border-radius: 8px; color: #333; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 14px 25px; text-decoration: none; font-size: 1rem; width: auto;">
+                    + Agregar Evento
+                </a>
+                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration: none; padding: 14px 25px; display: flex; align-items: center; gap: 8px;">
                     ⬅ Volver
                 </a>
             </div>
         </div>
-
-        {# EL CONTENEDOR DEL CALENDARIO #}
-        <div id="calendar-full" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; min-height: 700px;"></div>
+ 
+        <div id="calendar-full" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--gris-borde); min-height: 700px;"></div>
     </div>
 </main>
-
+ 
+{# Modal para ver y eliminar un evento — usa tus clases CSS existentes #}
+<div id="modal-evento" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
+    <div class="card-sobria" style="padding: 35px; max-width: 420px; width: 90%;">
+        <h3 id="modal-titulo" style="margin: 0 0 15px; color: var(--azul-profundo); font-size: 1.3rem;"></h3>
+        <p id="modal-lugar" style="color: #666; margin: 0 0 8px; font-size: 1rem;"></p>
+        <p id="modal-fecha" style="color: #999; margin: 0 0 25px; font-size: 0.95rem;"></p>
+ 
+        <div style="display: flex; gap: 12px;">
+            <form id="form-eliminar" method="POST" style="flex: 1;">
+                {% csrf_token %}
+                <button type="submit" class="btn-reject" style="width: 100%; padding: 14px; font-size: 1rem;">
+                    🗑 Eliminar
+                </button>
+            </form>
+            <button onclick="cerrarModal()" class="btn-salir" style="flex: 1; padding: 14px; font-size: 1rem;">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+ 
 <script id="todos-eventos-json" type="application/json">
     [
         {% for e in todos_eventos %}
         {
+            "id": {{ e.id }},
             "title": "{{ e.titulo|escapejs }}",
             "start": "{{ e.fecha_hora|date:'Y-m-d\TH:i:s' }}",
-            "color": "{% if e.tipo == 'medico' %}#3182ce{% elif e.tipo == 'social' %}#38a169{% else %}#1e3a8a{% endif %}",
+            "color": "{% if e.tipo == 'medico' %}var(--evento-medico){% elif e.tipo == 'social' %}#38a169{% elif e.tipo == 'actividad' %}#d97706{% else %}var(--azul-profundo){% endif %}",
             "extendedProps": {
                 "lugar": "{{ e.lugar|escapejs }}",
-                "tipo": "{{ e.tipo }}"
+                "tipo":  "{{ e.tipo }}"
             }
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ]
 </script>
 {% endblock %}
-
+ 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script>
+    function cerrarModal() {
+        document.getElementById('modal-evento').style.display = 'none';
+    }
+ 
+    // Cerrar modal al hacer click fuera
+    document.getElementById('modal-evento').addEventListener('click', function(e) {
+        if (e.target === this) cerrarModal();
+    });
+ 
     document.addEventListener('DOMContentLoaded', function() {
         const calendarEl = document.getElementById('calendar-full');
-        const dataEl = document.getElementById('todos-eventos-json');
-        
-        if (calendarEl && dataEl) {
-            const eventos = JSON.parse(dataEl.textContent);
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'es',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek'
-                },
-                buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
-                events: eventos,
-                eventClick: function(info) {
-                    alert('Evento: ' + info.event.title + '\nLugar: ' + (info.event.extendedProps.lugar || 'No especificado'));
-                }
-            });
-            calendar.render();
-        }
+        const eventos = JSON.parse(document.getElementById('todos-eventos-json').textContent);
+ 
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            headerToolbar: {
+                left:   'prev,next today',
+                center: 'title',
+                right:  'dayGridMonth,timeGridWeek'
+            },
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
+            events: eventos,
+ 
+            eventClick: function(info) {
+                const props   = info.event.extendedProps;
+                const fechaStr = info.event.start
+                    ? info.event.start.toLocaleDateString('es-AR', {
+                        weekday: 'long', year: 'numeric',
+                        month: 'long', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })
+                    : '';
+ 
+                document.getElementById('modal-titulo').textContent = info.event.title;
+                document.getElementById('modal-lugar').textContent  = props.lugar ? '📍 ' + props.lugar : '';
+                document.getElementById('modal-fecha').textContent  = '🕐 ' + fechaStr;
+                document.getElementById('form-eliminar').action     = '/calendario/eliminar/' + info.event.id + '/';
+ 
+                document.getElementById('modal-evento').style.display = 'flex';
+            }
+        });
+ 
+        calendar.render();
     });
 </script>
 {% endblock %}

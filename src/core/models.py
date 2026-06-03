@@ -39,11 +39,20 @@ class Medicamento(models.Model):
         return f"{self.nombre} - {self.paciente.username}"
 
 class EventoCalendario(models.Model):
-    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='eventos')
-    titulo = models.CharField(max_length=200)
-    fecha_hora = models.DateTimeField()
+    TIPO_CHOICES = [
+        ('medico',    'Médico / Turno'),
+        ('social',    'Visita / Social'),
+        ('actividad', 'Actividad / Taller'),
+        ('otro',      'Otro'),
+    ]
+ 
+    paciente    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='eventos')
+    titulo      = models.CharField(max_length=200)
+    fecha_hora  = models.DateTimeField()
     descripcion = models.TextField(blank=True)
-
+    tipo        = models.CharField(max_length=20, choices=TIPO_CHOICES, default='otro')   # NUEVO
+    lugar       = models.CharField(max_length=200, blank=True)                            # NUEVO
+ 
     def __str__(self):
         return f"{self.titulo} - {self.fecha_hora.date()}"
 
