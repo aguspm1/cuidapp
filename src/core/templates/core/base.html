@@ -28,7 +28,16 @@
             </nav>
         </div>
     </header>
-
+    {% if messages %}
+        <div class="mensajes-sistema">
+            {% for message in messages %}
+            <div class="mensaje-alerta {{ message.tags }}">
+            {{ message }}
+            <button class="mensaje-cerrar" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    {% endfor %}
+    </div>
+    {% endif %}
     {% block content %}
     {% endblock %}
 
