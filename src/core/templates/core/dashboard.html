@@ -3,10 +3,9 @@
 
 {% block content %}
 <main class="main-content">
-    {# --- CABECERA Y ESTADO --- #}
+    <!-- CABECERA Y ESTADO -->
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
-            {# Avatar clickeable - Redirija a perfil del paciente #}
             <a href="{% url 'perfil_paciente' %}" class="dashboard-avatar">
                 {{ nombre_anciano|slice:":1"|upper }}
             </a>
@@ -16,7 +15,6 @@
             </a>
         </div>
         
-        {# Selector de Pacientes (si hay múltiples) #}
         {% if pacientes_list|length > 1 %}
         <div class="dashboard-selector">
             <select onchange="location.href = this.value">
@@ -32,14 +30,14 @@
         <span class="status-badge">✓ Conectado</span>
     </div>
 
-    <div class="status-row" style="margin-bottom: 30px;">
-        <div class="status-card-mini"><span style="font-size: 1.3rem;">📍</span> Recoleta, CABA</div>
-        <div class="status-card-mini"><span style="font-size: 1.3rem;">🔋</span> 89% Batería</div>
-        <div class="status-card-mini"><span style="font-size: 1.3rem;">📶</span> Señal Excelente</div>
+    <div class="status-row">
+        <div class="status-card-mini"><span class="status-icon">📍</span> Recoleta, CABA</div>
+        <div class="status-card-mini"><span class="status-icon">🔋</span> 89% Batería</div>
+        <div class="status-card-mini"><span class="status-icon">📶</span> Señal Excelente</div>
     </div>
 
-    {# --- BOTONES DE PESTAÑAS (Ahora habilitados) --- #}
-    <div class="grid-shortcuts" style="margin-bottom: 30px;">
+    <!-- PESTAÑAS -->
+    <div class="grid-shortcuts">
         <button id="btn-tab-cal" class="shortcut-btn" onclick="mostrarPestana('calendario')">
             <span class="shortcut-icon">📅</span>
             <span>Calendario</span>
@@ -50,105 +48,157 @@
             <span>Medicamentos</span>
         </button>
 
-        <a href="{% url 'fotos_mediciones' %}" class="shortcut-btn" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <a href="{% url 'fotos_mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📸</span>
             <span>Fotos</span>
         </a>
         
-        <a href="{% url 'mediciones' %}" class="shortcut-btn" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <a href="{% url 'mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📊</span>
             <span>Mediciones</span>
         </a>
     </div>
 
-    {# --- CONTENIDO DE MEDICAMENTOS --- #}
-    <div id="seccion-meds" class="pestana-content">
-        <div class="card-sobria" style="border-top: 6px solid var(--celeste-neon); padding: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h3 style="margin:0; color: var(--azul-profundo); font-size: 1.4rem;">Plan de Medicación Activo</h3>
-                <a href="{% url 'nuevo_medicamento' %}" style="text-decoration: none; color: var(--celeste-neon); font-weight: bold; font-size: 1.05rem;">+ Cargar Nuevo</a>
+    <!-- SECCIÓN MEDICAMENTOS -->
+    <div id="seccion-meds" class="pestana-content active">
+        <div class="card-sobria card-meds-header">
+            <div class="meds-title-bar">
+                <h3>Plan de Medicación Activo</h3>
+                <a href="{% url 'nuevo_medicamento' %}" class="btn-add-med">+ Cargar Nuevo</a>
             </div>
-            <table class="tabla-meds">
-                <thead>
-                    <tr>
-                        <th>NOMBRE</th>
-                        <th>FRECUENCIA</th>
-                        <th>STOCK</th>
-                        <th>ESTADO</th>
-                        <th>ACCIÓN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for r in remedios %}
-                    <tr>
-                        <td><strong>{{ r.nombre }}</strong></td>
-                        <td>{{ r.frecuencia|default:"A demanda" }}</td>
-                        <td>{{ r.stock_actual }} / {{ r.stock_total }}</td>
-                        <td>
-                            <div class="progress-bg"><div class="progress-fill" style="width: {{ r.porcentaje_stock }}%;"></div></div>
-                        </td>
-                        <td>
-                            <div style="display: flex; gap: 10px;">
-                                <form action="{% url 'reponer_caja' r.pk %}" method="POST">{% csrf_token %}<button class="btn-reponer-mini">Reponer</button></form>
-                                <form action="{% url 'eliminar_medicamento' r.pk %}" method="POST">{% csrf_token %}<button class="btn-eliminar-mini">🗑️</button></form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="5" style="text-align: center; padding: 30px;">No hay medicamentos cargados para este paciente.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+            {% if remedios %}
+            <div class="tabla-meds-container">
+                <table class="tabla-meds">
+                    <thead>
+                        <tr>
+                            <th>NOMBRE</th>
+                            <th>PRESENTACIÓN</th>
+                            <th>DOSIS</th>
+                            <th>FRECUENCIA</th>
+                            <th>STOCK</th>
+                            <th>TOMAS</th>
+                            <th>ACCIÓN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in remedios %}
+                        <tr class="{% if med.stock_bajo %}row-stock-bajo{% endif %}">
+                            <td class="cell-nombre">
+                                <strong>{{ med.nombre }}</strong>
+                                {% if med.stock_bajo %}<span class="badge-alerta">⚠️ Stock bajo</span>{% endif %}
+                            </td>
+                            <td class="cell-presentacion">
+                                {{ med.get_tipo_presentacion_display }}<br>
+                                <small>{{ med.unidad_medida }}</small>
+                            </td>
+                            <td class="cell-dosis">{{ med.dosis_por_toma }} {{ med.unidad_medida }}</td>
+                            <td class="cell-frecuencia">
+                                {% if med.frecuencia_tipo == 'fijo' %}
+                                    <small>{{ med.horario_fijo }}</small><br>
+                                    <small class="small-gray">c/{{ med.cada_cuantas_horas }}hs</small>
+                                {% else %}
+                                    <small>{{ med.evento_toma }}</small>
+                                {% endif %}
+                                {% if med.duracion_tipo == 'temporal' %}
+                                    <br><small class="small-rojo">Hasta: {{ med.fecha_fin }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="cell-stock">
+                                <div class="stock-display">
+                                    <div class="progress-bg">
+                                        <div class="progress-fill" style="width: {{ med.porcentaje_stock }}%;"></div>
+                                    </div>
+                                    <span class="stock-number">{{ med.stock_actual }}</span>
+                                </div>
+                            </td>
+                            <td class="cell-tomas">
+                                <strong class="tomas-count">{{ med.tomas_restantes }}</strong>
+                                <small>tomas</small>
+                            </td>
+                            <td class="cell-acciones">
+                                <div class="acciones-meds">
+                                    <!-- Registrar toma -->
+                                    {% if not paciente_actual %}
+                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" class="form-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-mini btn-success" title="Registrar toma">✅</button>
+                                        </form>
+                                    {% else %}
+                                        <a href="{% url 'reponer_medicamento' med.id %}" class="btn-mini btn-info" title="Reponer stock">🔄</a>
+                                    {% endif %}
+                                    
+                                    <!-- Eliminar -->
+                                    <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" class="form-inline" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-mini btn-danger" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>📭 No hay medicamentos cargados</p>
+                <a href="{% url 'nuevo_medicamento' %}" class="btn-primary">➕ Cargar primer medicamento</a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    {# --- CONTENIDO DE CALENDARIO --- #}
-    <div id="seccion-cal" class="pestana-content" style="display: none;">
-        <div class="card-sobria" style="border-left: 6px solid var(--azul-profundo); padding: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h3 style="margin:0; color: var(--azul-profundo); font-size: 1.4rem;">Próximos Eventos</h3>
-                <div style="display: flex; gap: 15px;">
-                    <a href="{% url 'nuevo_evento' %}" class="btn-reponer-mini" style="text-decoration:none;">+ Nuevo</a>
-                    <a href="{% url 'calendario' %}" class="btn-reponer-mini" style="background: var(--azul-profundo); text-decoration:none;">Ver mes completo</a>
+    <!-- SECCIÓN CALENDARIO -->
+    <div id="seccion-cal" class="pestana-content">
+        <div class="card-sobria card-eventos-header">
+            <div class="eventos-title-bar">
+                <h3>Próximos Eventos</h3>
+                <div class="eventos-actions">
+                    <a href="{% url 'nuevo_evento' %}" class="btn-mini-text">+ Nuevo</a>
+                    <a href="{% url 'calendario' %}" class="btn-mini-text">Ver mes completo</a>
                 </div>
             </div>
+
+            {% if eventos_proximos %}
             <div class="lista-eventos">
-                {% for e in eventos_proximos %}
-                <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 5px solid var(--celeste-neon); display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div>
-                        <strong style="display:block; font-size: 1.1rem; margin-bottom: 5px;">{{ e.titulo }}</strong>
-                        <small style="font-size: 0.95rem;">{{ e.fecha_hora|date:"d/m H:i" }}hs</small>
+                {% for evento in eventos_proximos %}
+                <div class="evento-card">
+                    <div class="evento-info">
+                        <strong class="evento-titulo">{{ evento.titulo }}</strong>
+                        <small class="evento-fecha">{{ evento.fecha_hora|date:"d/m H:i" }}hs</small>
+                        {% if evento.lugar %}
+                            <small class="evento-lugar">📍 {{ evento.lugar }}</small>
+                        {% endif %}
                     </div>
-                    <form action="{% url 'eliminar_evento' e.pk %}" method="POST">{% csrf_token %}<button style="border:none; background:none; cursor:pointer; font-size: 1.3rem;">🗑️</button></form>
+                    <form method="POST" action="{% url 'eliminar_evento' evento.id %}" class="form-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-evento-delete">🗑️</button>
+                    </form>
                 </div>
-                {% empty %}
-                <p style="text-align:center; color: #94a3b8; padding: 30px; font-size: 1rem;">No hay eventos pronto.</p>
                 {% endfor %}
             </div>
-        </div>
-    </div>
-
-    {# --- CONTENIDO DE FOTOS (Pendiente de lógica) --- #}
-    <div id="seccion-fotos" class="pestana-content" style="display: none;">
-        <div class="card-sobria" style="padding: 40px;">
-            <h3 style="color: var(--azul-profundo);">Evidencias enviadas por Ana</h3>
-            <p style="color: #64748b;">Aquí aparecerán las fotos del tensiómetro para que cargues los datos.</p>
-            {# Aquí irá un loop de FotoMedicion en el futuro #}
-        </div>
-    </div>
-
-    {# --- CONTENIDO DE MEDICIONES (Pendiente de gráficos) --- #}
-    <div id="seccion-mediciones" class="pestana-content" style="display: none;">
-        <div class="card-sobria" style="padding: 40px;">
-            <h3 style="color: var(--azul-profundo);">Gráficos de Seguimiento</h3>
-            <div style="height: 300px; background: #f1f5f9; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                <p style="color: #94a3b8;">Gráfico de presión arterial en desarrollo...</p>
+            {% else %}
+            <div class="empty-state">
+                <p>📭 No hay eventos próximos.</p>
+                <a href="{% url 'nuevo_evento' %}" class="btn-primary">➕ Agendar evento</a>
             </div>
+            {% endif %}
         </div>
     </div>
+
 </main>
 {% endblock %}
 
 {% block scripts %}
 <script src="{% static 'core/js/main.js' %}"></script>
+<script>
+    function mostrarPestana(nombre) {
+        document.querySelectorAll('.pestana-content').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.shortcut-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('seccion-' + nombre).classList.add('active');
+        document.getElementById('btn-tab-' + nombre).classList.add('active');
+    }
+</script>
 {% endblock %}

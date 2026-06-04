@@ -14,75 +14,203 @@
                 </div>
             {% endif %}
             
+            <!-- SECCIÓN 1: Datos Básicos -->
+            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📋 Datos Básicos</h4>
+                
+                <div class="form-group">
+                    <label for="id_nombre">{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<div class="errorlist">{{ form.nombre.errors }}</div>{% endif %}
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="id_tipo_presentacion">{{ form.tipo_presentacion.label }}</label>
+                        {{ form.tipo_presentacion }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_unidad_medida">{{ form.unidad_medida.label }}</label>
+                        {{ form.unidad_medida }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_dosis_por_toma">{{ form.dosis_por_toma.label }}</label>
+                    {{ form.dosis_por_toma }}
+                    <small style="color: #666;">Cantidad exacta por toma (ej: 1, 15, 5.5)</small>
+                </div>
+            </div>
+
+<!-- SECCIÓN 2: Frecuencia -->
+<div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">⏰ Frecuencia</h4>
+    
+    <div class="form-group">
+        <label>{{ form.frecuencia_tipo.label }}</label>
+        <div style="display: flex; gap: 20px; margin-top: 10px;">
+            {% for radio in form.frecuencia_tipo %}
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    {{ radio.tag }}
+                    <span>{{ radio.choice_label }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Campos para Horario Fijo -->
+    <div id="campos-horario-fijo">
+        <div class="form-row-2">
             <div class="form-group">
-                <label for="id_nombre">{{ form.nombre.label }}</label>
-                {{ form.nombre }}
-                {% if form.nombre.errors %}<div class="errorlist">{{ form.nombre.errors }}</div>{% endif %}
+                <label for="id_horario_fijo">{{ form.horario_fijo.label }}</label>
+                {{ form.horario_fijo }}
+                <small style="color: #666;">Ej: 08:00 hs, 14:00 hs</small>
             </div>
-
-            <div class="form-row-2">
-                <div class="form-group" style="display: flex; align-items: center; gap: 12px; padding-top: 35px;">
-                    {{ form.horario_fijo }} <strong>{{ form.horario_fijo.label }}</strong>
-                </div>
-                <div class="form-group">
-                    <label for="id_horario">Horario / Momento</label>
-                    {{ form.horario }}
-                </div>
-            </div>
-
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label for="id_cada_cuantas_horas">{{ form.cada_cuantas_horas.label }}</label>
-                    {{ form.cada_cuantas_horas }}
-                </div>
-                <div class="form-group">
-                    <label for="id_dosis">{{ form.dosis.label }}</label>
-                    {{ form.dosis }}
-                </div>
-            </div>
-
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label for="id_stock_actual">{{ form.stock_actual.label }}</label>
-                    {{ form.stock_actual }}
-                </div>
-                <div class="form-group">
-                    <label for="id_stock_total">{{ form.stock_total.label }}</label>
-                    {{ form.stock_total }}
-                </div>
-            </div>
-
             <div class="form-group">
-                <label for="id_frecuencia">Frecuencia</label>
-                {{ form.frecuencia }}
+                <label for="id_cada_cuantas_horas">{{ form.cada_cuantas_horas.label }}</label>
+                {{ form.cada_cuantas_horas }}
+                <small style="color: #666;">Cada cuántas horas</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campos para Evento -->
+    <div id="campos-evento-toma" style="display: none;">
+        <div class="form-group">
+            <label for="id_evento_toma">{{ form.evento_toma.label }}</label>
+            {{ form.evento_toma }}
+            <small style="color: #666;">Ej: al levantarse, antes de acostarse, con las comidas</small>
+        </div>
+    </div>
+</div>
+
+            <!-- SECCIÓN 3: Duración -->
+<div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📅 Tipo de Tratamiento</h4>
+    
+    <div class="form-group">
+        <label>{{ form.duracion_tipo.label }}</label>
+        <div style="display: flex; gap: 20px; margin-top: 10px;">
+            {% for radio in form.duracion_tipo %}
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    {{ radio.tag }}
+                    <span>{{ radio.choice_label }}</span>
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Campo para Temporal -->
+    <div id="campos-fecha-fin" style="display: none;">
+        <div class="form-group">
+            <label for="id_fecha_fin">{{ form.fecha_fin.label }}</label>
+            {{ form.fecha_fin }}
+            <small style="color: #666;">Fecha en que termina el tratamiento</small>
+        </div>
+    </div>
+</div>
+
+            <!-- SECCIÓN 4: Stock y Alertas -->
+            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📦 Stock y Alertas</h4>
+                
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="id_stock_actual">{{ form.stock_actual.label }}</label>
+                        {{ form.stock_actual }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_stock_total">{{ form.stock_total.label }}</label>
+                        {{ form.stock_total }}
+                        <small style="color: #666;">Cantidad en caja estándar</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_umbral_stock_minimo">{{ form.umbral_stock_minimo.label }}</label>
+                    {{ form.umbral_stock_minimo }}
+                    <small style="color: #666;">Se alertará cuando quede esta cantidad</small>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 5: Estado -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.activo }}
+                    <span>{{ form.activo.label }}</span>
+                </label>
             </div>
 
             <div class="form-actions" style="display: flex; gap: 15px; margin-top: 25px;">
-                <button type="submit" class="btn-primary" style="flex: 1;">Guardar Medicación</button>
-                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration:none; display:flex; align-items:center; justify-content:center; flex: 0.8; padding: 16px;">Cancelar</a>
+                <button type="submit" class="btn-primary" style="flex: 1;">💾 Guardar Medicación</button>
+                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration:none; display:flex; align-items:center; justify-content:center; flex: 0.8; padding: 16px;">❌ Cancelar</a>
             </div>
         </form>
     </div>
 </main>
 
-<script>
-    const check = document.getElementById('check_horario');
-    const input = document.getElementById('input_horario');
-
-    function actualizarInput() {
-        if (check && input) {
-            if (check.checked) {
-                input.type = "time";
-            } else {
-                input.type = "text";
-                input.placeholder = "Ej: Antes de acostarse";
-            }
+<style>
+    .form-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    @media (max-width: 768px) {
+        .form-row-2 {
+            grid-template-columns: 1fr;
         }
     }
+</style>
 
-    if (check) {
-        check.addEventListener('change', actualizarInput);
-        window.onload = actualizarInput;
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos que controlan la frecuencia
+    const radiosFrecuencia = document.querySelectorAll('input[name="frecuencia_tipo"]');
+    const camposHorarioFijo = document.getElementById('campos-horario-fijo');
+    const camposEventoToma = document.getElementById('campos-evento-toma');
+    
+    // Elementos que controlan la duración
+    const radiosDuracion = document.querySelectorAll('input[name="duracion_tipo"]');
+    const camposFechaFin = document.getElementById('campos-fecha-fin');
+    
+    // Función para mostrar/ocultar según frecuencia
+    function actualizarFrecuencia() {
+        const frecuenciaSeleccionada = document.querySelector('input[name="frecuencia_tipo"]:checked')?.value;
+        
+        if (frecuenciaSeleccionada === 'fijo') {
+            camposHorarioFijo.style.display = 'block';
+            camposEventoToma.style.display = 'none';
+        } else {
+            camposHorarioFijo.style.display = 'none';
+            camposEventoToma.style.display = 'block';
+        }
     }
+    
+    // Función para mostrar/ocultar según duración
+    function actualizarDuracion() {
+        const duracionSeleccionada = document.querySelector('input[name="duracion_tipo"]:checked')?.value;
+        
+        if (duracionSeleccionada === 'temporal') {
+            camposFechaFin.style.display = 'block';
+        } else {
+            camposFechaFin.style.display = 'none';
+        }
+    }
+    
+    // Agregar listeners a los radios
+    radiosFrecuencia.forEach(radio => {
+        radio.addEventListener('change', actualizarFrecuencia);
+    });
+    
+    radiosDuracion.forEach(radio => {
+        radio.addEventListener('change', actualizarDuracion);
+    });
+    
+    // Ejecutar al cargar la página
+    actualizarFrecuencia();
+    actualizarDuracion();
+});
 </script>
+{% endblock scripts %}
 {% endblock %}

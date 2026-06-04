@@ -1,4 +1,3 @@
-# En src/cuidapp/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from core import views
@@ -8,10 +7,12 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('registro/', views.registro, name='registro'),
     path('', views.dashboard, name='dashboard'),
+    path('editar-perfil/<int:paciente_id>/', views.editar_perfil, name='editar_perfil'),
     
     # Medicamentos
-    path('nuevo-remedio/', views.nuevo_medicamento, name='nuevo_medicamento'),
-    path('reponer/<int:pk>/', views.reponer_caja, name='reponer_caja'),
+    path('nuevo-medicamento/', views.nuevo_medicamento, name='nuevo_medicamento'),
+    path('registrar-toma/<int:medicamento_id>/', views.registrar_toma, name='registrar_toma'),
+    path('reponer-medicamento/<int:medicamento_id>/', views.reponer_medicamento, name='reponer_medicamento'),
     path('eliminar-medicamento/<int:pk>/', views.eliminar_medicamento, name='eliminar_medicamento'),
     
     # Calendario

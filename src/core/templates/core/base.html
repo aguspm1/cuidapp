@@ -11,7 +11,10 @@
  
     <header class="main-header">
         <div class="header-container">
-            <h1 class="logo-texto">Cuida APP</h1>
+            <div class="logo-container">
+                <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
+                <h1 class="logo-texto">Cuida APP</h1>
+            </div>
             
             <nav class="nav-principal">
                 <a href="{% url 'dashboard' %}">Inicio</a>

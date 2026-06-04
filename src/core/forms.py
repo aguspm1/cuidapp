@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Medicamento
+from .models import Medicamento, PerfilPaciente
 
 class RegistroForm(UserCreationForm):
     ROLES = (('anciano', 'Anciano (App)'), ('tutor', 'Tutor (Gestión Web)'))
@@ -14,44 +14,52 @@ class RegistroForm(UserCreationForm):
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
 
-class MedicamentoForm(forms.ModelForm):
-    # Campos adicionales que no están en el modelo pero se muestran en el formulario
-    horario_fijo = forms.BooleanField(required=False, label="¿Tiene horario exacto?", widget=forms.CheckboxInput(attrs={'id': 'check_horario'}))
-    horario = forms.CharField(required=False, label="Horario / Momento", widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'input_horario'}))
-    dosis = forms.CharField(required=False, label="Dosis", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 1 comprimido'}))
-    cada_cuantas_horas = forms.IntegerField(required=False, label="Se toma cada (horas)", widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 12'}))
-    stock_inicial = forms.IntegerField(required=False, label="Stock inicial (para referencia)", widget=forms.NumberInput(attrs={'class': 'form-control'}))
-    stock_critico = forms.IntegerField(required=False, label="Stock crítico", widget=forms.NumberInput(attrs={'class': 'form-control'}))
+class PerfilPacienteForm(forms.ModelForm):
+    class Meta:
+        model = PerfilPaciente
+        fields = ['fecha_nacimiento', 'grupo_sanguineo', 'alergias', 
+                  'contacto_emergencia', 'telefono_emergencia', 'medico_cabecera',
+                  'obra_social', 'plan', 'numero_afiliado',
+                  'requiere_control_presion', 'requiere_control_glucosa', 
+                  'requiere_control_peso']
+        widgets = {
+            'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'grupo_sanguineo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'O+, O-, A+, etc.'}),
+            'alergias': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'medico_cabecera': forms.TextInput(attrs={'class': 'form-control'}),
+            'obra_social': forms.TextInput(attrs={'class': 'form-control'}),
+            'plan': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_afiliado': forms.TextInput(attrs={'class': 'form-control'}),
+            'requiere_control_presion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'requiere_control_glucosa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'requiere_control_peso': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
+
+class MedicamentoForm(forms.ModelForm):
     class Meta:
         model = Medicamento
-        fields = ['nombre', 'stock_actual', 'stock_total', 'frecuencia', 'activo']
-        labels = {
-            'nombre': 'Nombre del Medicamento',
-            'stock_actual': 'Stock Actual',
-            'stock_total': 'Stock Total',
-            'frecuencia': 'Frecuencia',
-            'activo': 'Medicamento Activo'
-        }
+        fields = [
+            'nombre', 'tipo_presentacion', 'unidad_medida', 'dosis_por_toma',
+            'frecuencia_tipo', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
+            'duracion_tipo', 'fecha_fin',
+            'stock_actual', 'stock_total', 'umbral_stock_minimo', 'activo'
+        ]
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Lotrial 10'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Clonazepam'}),
+            'tipo_presentacion': forms.Select(attrs={'class': 'form-control'}),
+            'unidad_medida': forms.Select(attrs={'class': 'form-control'}),
+            'dosis_por_toma': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Ej: 1, 15, 5.5'}),
+            'frecuencia_tipo': forms.RadioSelect(),
+            'horario_fijo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 08:00 hs'}),
+            'evento_toma': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: al levantarse'}),
+            'cada_cuantas_horas': forms.NumberInput(attrs={'class': 'form-control'}),
+            'duracion_tipo': forms.RadioSelect(),
+            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'stock_actual': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stock_total': forms.NumberInput(attrs={'class': 'form-control'}),
-            'frecuencia': forms.TextInput(attrs={'class': 'form-control'}),
-            'activo': forms.CheckboxInput(attrs={'class': 'form-control'}),
+            'stock_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cantidad en caja estándar'}),
+            'umbral_stock_minimo': forms.NumberInput(attrs={'class': 'form-control'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-    
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        
-        # Guardamos los campos extras en el campo 'frecuencia' como referencia
-        dosis = self.cleaned_data.get('dosis') or ""
-        horario = self.cleaned_data.get('horario') or ""
-        cada = self.cleaned_data.get('cada_cuantas_horas') or ""
-        
-        if horario or dosis or cada:
-            instance.frecuencia = f"{dosis} - {horario} (Cada {cada}hs)".strip(" - (Cada hs)")
-        
-        if commit:
-            instance.save()
-        return instance
