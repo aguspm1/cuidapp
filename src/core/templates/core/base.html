@@ -8,19 +8,24 @@
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
 </head>
 <body class="modo-tutor">
- 
+
     <header class="main-header">
         <div class="header-container">
             <div class="logo-container">
                 <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
                 <h1 class="logo-texto">Cuida APP</h1>
             </div>
-            
+
             <nav class="nav-principal">
                 <a href="{% url 'dashboard' %}">Inicio</a>
-                <a href="{% url 'perfil_tutor' %}">Perfil</a>
-                
+
                 {% if user.is_authenticated %}
+                    {# usuario_es_tutor viene del context processor — disponible en todos los templates #}
+                    {% if usuario_es_tutor %}
+                        <a href="{% url 'perfil_tutor' %}">Mi Perfil</a>
+                    {% else %}
+                        <a href="{% url 'perfil_paciente' %}">Mi Perfil</a>
+                    {% endif %}
                     <form action="{% url 'logout' %}" method="post" class="form-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn-salir">Cerrar Sesión</button>
@@ -31,7 +36,7 @@
             </nav>
         </div>
     </header>
- 
+
     {% if messages %}
     <div class="mensajes-sistema">
         {% for message in messages %}
@@ -42,17 +47,17 @@
         {% endfor %}
     </div>
     {% endif %}
- 
+
     {% block content %}
     {% endblock %}
- 
+
     <footer style="text-align: center; padding: 35px; color: #999; font-size: 0.95rem; background: #f8fafc; margin-top: 50px;">
         &copy; 2026 Cuida APP - Proyecto IFTS 18
     </footer>
- 
+
     {% block scripts %}
     {% endblock %}
- 
+
     <script>
     setTimeout(function() {
         document.querySelectorAll('.mensaje-alerta').forEach(function(el) {
@@ -62,6 +67,6 @@
         });
     }, 4000);
     </script>
- 
+
 </body>
 </html>

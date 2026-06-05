@@ -54,6 +54,7 @@ class Medicamento(models.Model):
     # Frecuencia
     FRECUENCIA_CHOICES = [
         ('fijo', 'Horario Fijo'),
+        ('intervalo', 'Cada X horas'),
         ('evento', 'Relativo a Evento'),
     ]
     TIPO_DURACION_CHOICES = [

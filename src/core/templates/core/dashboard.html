@@ -3,19 +3,19 @@
 
 {% block content %}
 <main class="main-content">
-    <!-- CABECERA Y ESTADO -->
+    <!-- CABECERA -->
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
-            <a href="{% url 'perfil_paciente' %}" class="dashboard-avatar">
+            <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
                 {{ nombre_anciano|slice:":1"|upper }}
             </a>
-            <a href="{% url 'perfil_paciente' %}" class="dashboard-info-text">
+            <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text">
                 <h3>{{ nombre_anciano }}</h3>
-                <p>Ver perfil</p>
+                <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
-        
-        {% if pacientes_list|length > 1 %}
+
+        {% if pacientes_list|length > 1 and usuario_es_tutor %}
         <div class="dashboard-selector">
             <select onchange="location.href = this.value">
                 {% for pac in pacientes_list %}
@@ -26,7 +26,7 @@
             </select>
         </div>
         {% endif %}
-        
+
         <span class="status-badge">✓ Conectado</span>
     </div>
 
@@ -36,23 +36,45 @@
         <div class="status-card-mini"><span class="status-icon">📶</span> Señal Excelente</div>
     </div>
 
+    <!-- ALERTAS DE STOCK BAJO — solo tutor las ve con opción de reponer -->
+    {% for med in remedios %}
+        {% if med.tiene_stock_bajo %}
+        <div class="alerta-stock">
+            <span>⚠️</span>
+            <span class="alerta-stock-texto">
+                <strong>Stock bajo:</strong> {{ med.nombre }} — quedan {{ med.tomas_restantes }} toma{{ med.tomas_restantes|pluralize }} ({{ med.stock_actual }} {{ med.unidad_medida }})
+            </span>
+            {% if usuario_es_tutor %}
+            <form method="POST" action="{% url 'reponer_medicamento' med.id %}" class="form-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn-mini-text" style="font-size:0.85rem; padding: 6px 14px;">Reponer caja</button>
+            </form>
+            {% endif %}
+            <button class="alerta-stock-cerrar" onclick="this.closest('.alerta-stock').remove()">✕</button>
+        </div>
+        {% endif %}
+    {% endfor %}
+
     <!-- PESTAÑAS -->
     <div class="grid-shortcuts">
-        <button id="btn-tab-cal" class="shortcut-btn" onclick="mostrarPestana('calendario')">
+        <button id="btn-tab-cal" class="shortcut-btn" onclick="mostrarPestana('cal')">
             <span class="shortcut-icon">📅</span>
             <span>Calendario</span>
+            {% if eventos_proximos %}<span class="tab-badge">{{ eventos_proximos|length }}</span>{% endif %}
         </button>
-        
-        <button id="btn-tab-meds" class="shortcut-btn active" onclick="mostrarPestana('medicamentos')">
+
+        <button id="btn-tab-meds" class="shortcut-btn active" onclick="mostrarPestana('meds')">
             <span class="shortcut-icon">💊</span>
             <span>Medicamentos</span>
         </button>
 
+        {% if usuario_es_tutor %}
         <a href="{% url 'fotos_mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📸</span>
             <span>Fotos</span>
         </a>
-        
+        {% endif %}
+
         <a href="{% url 'mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📊</span>
             <span>Mediciones</span>
@@ -64,7 +86,10 @@
         <div class="card-sobria card-meds-header">
             <div class="meds-title-bar">
                 <h3>Plan de Medicación Activo</h3>
+                {# Solo el tutor puede agregar medicamentos #}
+                {% if usuario_es_tutor %}
                 <a href="{% url 'nuevo_medicamento' %}" class="btn-add-med">+ Cargar Nuevo</a>
+                {% endif %}
             </div>
 
             {% if remedios %}
@@ -83,10 +108,10 @@
                     </thead>
                     <tbody>
                         {% for med in remedios %}
-                        <tr class="{% if med.stock_bajo %}row-stock-bajo{% endif %}">
+                        <tr class="{% if med.tiene_stock_bajo %}row-stock-bajo{% endif %}">
                             <td class="cell-nombre">
                                 <strong>{{ med.nombre }}</strong>
-                                {% if med.stock_bajo %}<span class="badge-alerta">⚠️ Stock bajo</span>{% endif %}
+                                {% if med.tiene_stock_bajo %}<span class="badge-alerta">⚠️ Stock bajo</span>{% endif %}
                             </td>
                             <td class="cell-presentacion">
                                 {{ med.get_tipo_presentacion_display }}<br>
@@ -95,13 +120,18 @@
                             <td class="cell-dosis">{{ med.dosis_por_toma }} {{ med.unidad_medida }}</td>
                             <td class="cell-frecuencia">
                                 {% if med.frecuencia_tipo == 'fijo' %}
-                                    <small>{{ med.horario_fijo }}</small><br>
-                                    <small class="small-gray">c/{{ med.cada_cuantas_horas }}hs</small>
+                                    {% if med.horario_fijo %}
+                                        <small>🕐 {{ med.horario_fijo }}</small>
+                                    {% else %}
+                                        <small style="color:#999;">Sin horario cargado</small>
+                                    {% endif %}
+                                {% elif med.frecuencia_tipo == 'intervalo' %}
+                                    <small>🔁 Cada {{ med.cada_cuantas_horas }} hs</small>
                                 {% else %}
-                                    <small>{{ med.evento_toma }}</small>
+                                    <small>📌 {{ med.evento_toma }}</small>
                                 {% endif %}
                                 {% if med.duracion_tipo == 'temporal' %}
-                                    <br><small class="small-rojo">Hasta: {{ med.fecha_fin }}</small>
+                                    <br><small class="small-rojo">Hasta: {{ med.fecha_fin|date:"d/m/Y" }}</small>
                                 {% endif %}
                             </td>
                             <td class="cell-stock">
@@ -118,21 +148,23 @@
                             </td>
                             <td class="cell-acciones">
                                 <div class="acciones-meds">
-                                    <!-- Registrar toma -->
-                                    {% if not paciente_actual %}
-                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" class="form-inline">
+                                    {% if usuario_es_tutor %}
+                                        {# TUTOR: puede reponer y eliminar #}
+                                        <form method="POST" action="{% url 'reponer_medicamento' med.id %}" class="form-inline">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn-mini btn-success" title="Registrar toma">✅</button>
+                                            <button type="submit" class="btn-mini btn-info" title="Reponer stock">🔄</button>
+                                        </form>
+                                        <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" class="form-inline" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-mini btn-danger" title="Eliminar">🗑️</button>
                                         </form>
                                     {% else %}
-                                        <a href="{% url 'reponer_medicamento' med.id %}" class="btn-mini btn-info" title="Reponer stock">🔄</a>
+                                        {# PACIENTE: solo puede registrar su toma #}
+                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" class="form-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-mini btn-success" title="Registrar toma">✅ Tomé</button>
+                                        </form>
                                     {% endif %}
-                                    
-                                    <!-- Eliminar -->
-                                    <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" class="form-inline" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn-mini btn-danger" title="Eliminar">🗑️</button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -143,7 +175,6 @@
             {% else %}
             <div class="empty-state">
                 <p>📭 No hay medicamentos cargados</p>
-                <a href="{% url 'nuevo_medicamento' %}" class="btn-primary">➕ Cargar primer medicamento</a>
             </div>
             {% endif %}
         </div>
@@ -154,34 +185,38 @@
         <div class="card-sobria card-eventos-header">
             <div class="eventos-title-bar">
                 <h3>Próximos Eventos</h3>
-                <div class="eventos-actions">
-                    <a href="{% url 'nuevo_evento' %}" class="btn-mini-text">+ Nuevo</a>
-                    <a href="{% url 'calendario' %}" class="btn-mini-text">Ver mes completo</a>
-                </div>
+                <a href="{% url 'calendario' %}" class="btn-mini-text">Ir al calendario completo →</a>
             </div>
 
             {% if eventos_proximos %}
             <div class="lista-eventos">
-                {% for evento in eventos_proximos %}
-                <div class="evento-card">
+                {% for evento in eventos_proximos|slice:":4" %}
+                <div class="evento-card evento-tipo-{{ evento.tipo }}">
+                    <div class="evento-tipo-icon">
+                        {% if evento.tipo == 'medico' %}🏥
+                        {% elif evento.tipo == 'social' %}👥
+                        {% elif evento.tipo == 'actividad' %}🎯
+                        {% else %}📌{% endif %}
+                    </div>
                     <div class="evento-info">
                         <strong class="evento-titulo">{{ evento.titulo }}</strong>
-                        <small class="evento-fecha">{{ evento.fecha_hora|date:"d/m H:i" }}hs</small>
+                        <small class="evento-fecha">{{ evento.fecha_hora|date:"d/m/Y" }} — {{ evento.fecha_hora|date:"H:i" }} hs</small>
                         {% if evento.lugar %}
                             <small class="evento-lugar">📍 {{ evento.lugar }}</small>
                         {% endif %}
                     </div>
-                    <form method="POST" action="{% url 'eliminar_evento' evento.id %}" class="form-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-evento-delete">🗑️</button>
-                    </form>
                 </div>
                 {% endfor %}
             </div>
+            {% if eventos_proximos|length > 4 %}
+            <p style="text-align:center; margin-top: 15px; color: #999; font-size: 0.9rem;">
+                y {{ eventos_proximos|length|add:"-4" }} evento{{ eventos_proximos|length|add:"-4"|pluralize }} más —
+                <a href="{% url 'calendario' %}" style="color: var(--azul-profundo);">ver todos</a>
+            </p>
+            {% endif %}
             {% else %}
             <div class="empty-state">
                 <p>📭 No hay eventos próximos.</p>
-                <a href="{% url 'nuevo_evento' %}" class="btn-primary">➕ Agendar evento</a>
             </div>
             {% endif %}
         </div>
@@ -195,10 +230,14 @@
 <script>
     function mostrarPestana(nombre) {
         document.querySelectorAll('.pestana-content').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.shortcut-btn').forEach(b => b.classList.remove('active'));
-        
+        document.querySelectorAll('#btn-tab-cal, #btn-tab-meds').forEach(b => b.classList.remove('active'));
         document.getElementById('seccion-' + nombre).classList.add('active');
         document.getElementById('btn-tab-' + nombre).classList.add('active');
+        sessionStorage.setItem('dashboard_tab', nombre);
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (sessionStorage.getItem('dashboard_tab') === 'cal') mostrarPestana('cal');
+    });
 </script>
 {% endblock %}
