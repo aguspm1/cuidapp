@@ -4,25 +4,44 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma
-from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm
+from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm
 
 
-# ========== HELPERS DE PERMISOS ==========
+# ========== HELPERS ==========
 
 def es_tutor(user):
-    """Devuelve True si el usuario es tutor de al menos un paciente"""
     return PerfilPaciente.objects.filter(tutor=user).exists()
 
 def es_paciente(user):
-    """Devuelve True si el usuario tiene perfil de paciente"""
     return PerfilPaciente.objects.filter(user=user).exists()
 
 def solo_tutor(request):
-    """Shortcut: redirige con error si el usuario NO es tutor"""
     if not es_tutor(request.user):
         messages.error(request, "❌ Solo los tutores pueden realizar esta acción.")
         return True
     return False
+
+def obtener_paciente_activo(request):
+    """
+    Devuelve (perfil, paciente_user) según el rol.
+    - Paciente: su propio perfil
+    - Tutor: paciente seleccionado en sesión
+    """
+    perfil_propio = PerfilPaciente.objects.filter(user=request.user).first()
+    if perfil_propio:
+        return perfil_propio, request.user
+
+    paciente_id_sesion = request.session.get("paciente_seleccionado")
+    if paciente_id_sesion:
+        perfil = PerfilPaciente.objects.filter(id=paciente_id_sesion, tutor=request.user).first()
+    else:
+        perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+        if perfil:
+            request.session["paciente_seleccionado"] = perfil.id
+
+    if perfil:
+        return perfil, perfil.user
+    return None, None
 
 
 # ========== 1. DASHBOARD ==========
@@ -52,12 +71,12 @@ def dashboard(request):
         nombre_paciente = target_user.first_name or target_user.username
     elif perfil_propio:
         target_user = request.user
-        nombre_paciente = "Mi Perfil"
+        nombre_paciente = request.user.first_name or request.user.username
     else:
         target_user = None
 
     if target_user:
-        remedios = Medicamento.objects.filter(paciente=target_user)
+        remedios = Medicamento.objects.filter(paciente=target_user, activo=True)
         for r in remedios:
             r.porcentaje_stock = int((r.stock_actual / r.stock_total) * 100) if r.stock_total else 0
         eventos_proximos = EventoCalendario.objects.filter(
@@ -68,10 +87,10 @@ def dashboard(request):
     return render(request, 'core/dashboard.html', {
         'remedios': remedios,
         'eventos_proximos': eventos_proximos,
-        'nombre_anciano': nombre_paciente,
+        'nombre_paciente': nombre_paciente,
         'pacientes_list': pacientes_a_cargo_list,
         'paciente_actual': paciente_a_cargo,
-        'es_tutor': es_tutor(request.user),   # útil en templates para mostrar/ocultar botones
+        'es_tutor': es_tutor(request.user),
     })
 
 
@@ -81,8 +100,12 @@ def registro(request):
         form = RegistroForm(request.POST)
         if form.is_valid():
             user = form.save()
-            PerfilPaciente.objects.create(user=user)
-            messages.success(request, "¡Cuenta creada correctamente!")
+            rol = form.cleaned_data.get('rol')
+            if rol == 'paciente':
+                PerfilPaciente.objects.create(user=user)
+                messages.success(request, "¡Cuenta creada! Pedile a tu tutor que te vincule desde su panel.")
+            else:
+                messages.success(request, "¡Cuenta de tutor creada! Ya podés vincular a tu paciente.")
             return redirect('login')
     else:
         form = RegistroForm()
@@ -91,12 +114,12 @@ def registro(request):
 
 # ========== 3. VINCULACIÓN ==========
 @login_required
-def vincular_anciano(request):
+def vincular_paciente(request):
     if request.method == 'POST':
-        user_buscado = request.POST.get('username_anciano')
+        user_buscado = request.POST.get('username_paciente')
         try:
-            anciano_user = User.objects.get(username=user_buscado)
-            perfil = PerfilPaciente.objects.get(user=anciano_user)
+            paciente_user_nuevo = User.objects.get(username=user_buscado)
+            perfil = PerfilPaciente.objects.get(user=paciente_user_nuevo)
             perfil.tutor = request.user
             perfil.save()
             messages.success(request, f"✅ Vinculado con éxito a {user_buscado}")
@@ -111,12 +134,18 @@ def vincular_anciano(request):
 # ========== 4. CALENDARIO ==========
 @login_required
 def calendario_eventos(request):
-    paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+    paciente_id = request.session.get('paciente_seleccionado')
+    if paciente_id:
+        paciente_perfil = PerfilPaciente.objects.filter(id=paciente_id, tutor=request.user).first()
+    else:
+        paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+
     target = paciente_perfil.user if paciente_perfil else request.user
     nombre = target.get_full_name() or target.username
+
     return render(request, 'core/calendario.html', {
         'todos_eventos': EventoCalendario.objects.filter(paciente=target).order_by('fecha_hora'),
-        'nombre_anciano': nombre,
+        'nombre_paciente': nombre,
     })
 
 @login_required
@@ -124,7 +153,12 @@ def nuevo_evento(request):
     if solo_tutor(request):
         return redirect('dashboard')
 
-    paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+    paciente_id = request.session.get('paciente_seleccionado')
+    if paciente_id:
+        paciente_perfil = PerfilPaciente.objects.filter(id=paciente_id, tutor=request.user).first()
+    else:
+        paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+
     target = paciente_perfil.user if paciente_perfil else request.user
     nombre = target.get_full_name() or target.username
 
@@ -137,10 +171,10 @@ def nuevo_evento(request):
             tipo        = request.POST.get('tipo', 'otro'),
             lugar       = request.POST.get('lugar', ''),
         )
-        messages.success(request, "✅ Evento agendado correctamente.")
+        messages.success(request, f"✅ Evento agendado correctamente para {nombre}.")
         return redirect('calendario')
 
-    return render(request, 'core/nuevo_evento.html', {'nombre_anciano': nombre})
+    return render(request, 'core/nuevo_evento.html', {'nombre_paciente': nombre})
 
 @login_required
 def editar_evento(request, pk):
@@ -166,7 +200,7 @@ def editar_evento(request, pk):
         return redirect('calendario')
 
     return render(request, 'core/nuevo_evento.html', {
-        'nombre_anciano': nombre,
+        'nombre_paciente': nombre,
         'evento': evento,
     })
 
@@ -193,12 +227,28 @@ def nuevo_medicamento(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        print("POST horario_fijo:", request.POST.get("horario_fijo"))
-        print("POST frecuencia_tipo:", request.POST.get("frecuencia_tipo"))
-        form = MedicamentoForm(request.POST)
+        horarios = []
+        i = 0
+        while True:
+            h = request.POST.get(f'horario_{i}', '').strip()
+            if h:
+                horarios.append(h)
+                i += 1
+            else:
+                break
+
+        post_data = request.POST.copy()
+        if horarios:
+            post_data['horario_fijo'] = ', '.join(horarios)
+
+        form = MedicamentoForm(post_data)
         if form.is_valid():
             med = form.save(commit=False)
-            paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+            paciente_id_sesion = request.session.get('paciente_seleccionado')
+            if paciente_id_sesion:
+                paciente_perfil = PerfilPaciente.objects.filter(id=paciente_id_sesion, tutor=request.user).first()
+            else:
+                paciente_perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
             if not paciente_perfil:
                 messages.error(request, "❌ No tenés pacientes asignados.")
                 return redirect('dashboard')
@@ -215,27 +265,23 @@ def nuevo_medicamento(request):
 
 @login_required
 def registrar_toma(request, medicamento_id):
-    """Solo el propio paciente puede registrar sus tomas"""
     if request.method == 'POST':
-        # get_object_or_404 con paciente=request.user garantiza que solo el dueño puede registrar
         med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=request.user)
         RegistroToma.objects.create(
             medicamento=med,
             paciente=request.user,
             cantidad_tomada=med.dosis_por_toma
         )
-        med.stock_actual -= med.dosis_por_toma
+        med.stock_actual = max(0, med.stock_actual - med.dosis_por_toma)
         med.save()
-        if med.tiene_stock_bajo():
-            messages.warning(request, f"⚠️ Stock bajo: {med.nombre} - Quedan {med.tomas_restantes()} tomas.")
+        if med.tiene_stock_bajo:  # @property, sin paréntesis
+            messages.warning(request, f"⚠️ Stock bajo: {med.nombre} — quedan {med.tomas_restantes} tomas.")
         else:
             messages.success(request, f"✅ Toma registrada: {med.nombre}.")
-        return redirect('dashboard')
     return redirect('dashboard')
 
 @login_required
 def reponer_medicamento(request, medicamento_id):
-    """Repone el stock completo del medicamento (una caja entera)"""
     if solo_tutor(request):
         return redirect('dashboard')
 
@@ -250,12 +296,10 @@ def reponer_medicamento(request, medicamento_id):
 
 @login_required
 def eliminar_medicamento(request, pk):
-    """Solo el tutor puede eliminar medicamentos de sus pacientes"""
     if solo_tutor(request):
         return redirect('dashboard')
 
     med = get_object_or_404(Medicamento, pk=pk)
-    # Verifica que el medicamento sea de un paciente de ESTE tutor
     get_object_or_404(PerfilPaciente, tutor=request.user, user=med.paciente)
 
     if request.method == 'POST':
@@ -302,12 +346,11 @@ def perfil_paciente(request):
 def seleccionar_paciente(request, paciente_id):
     paciente = get_object_or_404(PerfilPaciente, id=paciente_id, tutor=request.user)
     request.session['paciente_seleccionado'] = paciente.id
-    messages.success(request, f"✅ Paciente seleccionado: {paciente.user.first_name}")
+    messages.success(request, f"✅ Paciente seleccionado: {paciente.user.first_name or paciente.user.username}")
     return redirect('dashboard')
 
 @login_required
 def editar_perfil(request, paciente_id):
-    """Solo el tutor puede editar el perfil del paciente"""
     if solo_tutor(request):
         return redirect('dashboard')
 
@@ -332,61 +375,87 @@ def editar_perfil(request, paciente_id):
 # ========== 7. MEDICIONES ==========
 @login_required
 def mediciones(request):
-    paciente_a_cargo = PerfilPaciente.objects.filter(tutor=request.user).first()
-    perfil_propio    = PerfilPaciente.objects.filter(user=request.user).first()
-    perfil = paciente_a_cargo or perfil_propio
-
+    perfil, paciente_user = obtener_paciente_activo(request)
     if not perfil:
         messages.error(request, "❌ Perfil no encontrado.")
         return redirect('dashboard')
 
-    mediciones_presion = DatoMedicion.objects.filter(
-        paciente=perfil.user, tipo='presion').order_by('-fecha_registro')[:30]
-    mediciones_peso    = DatoMedicion.objects.filter(
-        paciente=perfil.user, tipo='peso').order_by('-fecha_registro')[:30]
-    mediciones_glucosa = DatoMedicion.objects.filter(
-        paciente=perfil.user, tipo='glucosa').order_by('-fecha_registro')[:30]
+    mediciones_presion = DatoMedicion.objects.filter(paciente=paciente_user, tipo='presion').order_by('-fecha_registro')[:30]
+    mediciones_peso    = DatoMedicion.objects.filter(paciente=paciente_user, tipo='peso').order_by('-fecha_registro')[:30]
+    mediciones_glucosa = DatoMedicion.objects.filter(paciente=paciente_user, tipo='glucosa').order_by('-fecha_registro')[:30]
 
     return render(request, 'core/mediciones.html', {
-        'perfil': perfil,
-        'mediciones_presion': mediciones_presion,
-        'mediciones_peso':    mediciones_peso,
-        'mediciones_glucosa': mediciones_glucosa,
+        'perfil':              perfil,
+        'mediciones_presion':  mediciones_presion,
+        'mediciones_peso':     mediciones_peso,
+        'mediciones_glucosa':  mediciones_glucosa,
     })
 
 @login_required
 def fotos_mediciones(request):
-    if solo_tutor(request):
-        return redirect('dashboard')
+    perfil_propio = PerfilPaciente.objects.filter(user=request.user).first()
 
-    paciente_id_sesion = request.session.get('paciente_seleccionado')
-    if paciente_id_sesion:
-        paciente_a_cargo = PerfilPaciente.objects.filter(id=paciente_id_sesion, tutor=request.user).first()
+    if perfil_propio:
+        perfil = perfil_propio
+        paciente_user = request.user
+        es_paciente_role = True
     else:
-        paciente_a_cargo = PerfilPaciente.objects.filter(tutor=request.user).first()
+        es_paciente_role = False
+        paciente_id_sesion = request.session.get('paciente_seleccionado')
+        if paciente_id_sesion:
+            perfil = PerfilPaciente.objects.filter(id=paciente_id_sesion, tutor=request.user).first()
+        else:
+            perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+            if perfil:
+                request.session['paciente_seleccionado'] = perfil.id
 
-    if not paciente_a_cargo:
-        messages.error(request, "❌ No tenés pacientes asignados.")
-        return redirect('dashboard')
+        if not perfil:
+            messages.error(request, "❌ No tenés pacientes asignados.")
+            return redirect('dashboard')
+        paciente_user = perfil.user
 
     tipo_filtro = request.GET.get('tipo', '')
 
-    fotos_pendientes = FotoDocumento.objects.filter(paciente=paciente_a_cargo.user, procesada=False)
+    fotos_pendientes = FotoDocumento.objects.filter(paciente=paciente_user, procesada=False)
     if tipo_filtro:
         fotos_pendientes = fotos_pendientes.filter(tipo=tipo_filtro)
     fotos_pendientes = fotos_pendientes.order_by('-fecha_subida')
 
-    fotos_procesadas = FotoDocumento.objects.filter(paciente=paciente_a_cargo.user, procesada=True)
+    fotos_procesadas = FotoDocumento.objects.filter(paciente=paciente_user, procesada=True)
     if tipo_filtro:
         fotos_procesadas = fotos_procesadas.filter(tipo=tipo_filtro)
     fotos_procesadas = fotos_procesadas.order_by('-fecha_subida')[:20]
 
     return render(request, 'core/fotos_mediciones.html', {
-        'perfil':           paciente_a_cargo,
+        'perfil':           perfil,
         'fotos_pendientes': fotos_pendientes,
         'fotos_procesadas': fotos_procesadas,
         'tipo_filtro':      tipo_filtro,
+        'es_paciente':      es_paciente_role,
     })
+
+@login_required
+def subir_foto(request):
+    perfil, paciente_user = obtener_paciente_activo(request)
+    if not perfil:
+        messages.error(request, "❌ No se encontró un perfil asociado.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = SubirFotoForm(request.POST, request.FILES)
+        if form.is_valid():
+            foto = form.save(commit=False)
+            foto.paciente = paciente_user
+            foto.procesada = False
+            foto.save()
+            messages.success(request, "✅ Documento subido correctamente.")
+            return redirect('fotos_mediciones')
+        else:
+            messages.error(request, "❌ Error al subir el archivo.")
+    else:
+        form = SubirFotoForm()
+
+    return render(request, 'core/subir_foto.html', {'form': form})
 
 @login_required
 def cargar_dato_medicion(request, foto_id):
@@ -394,7 +463,8 @@ def cargar_dato_medicion(request, foto_id):
         return redirect('dashboard')
 
     foto = get_object_or_404(FotoDocumento, pk=foto_id, tipo='medicion')
-    perfil = foto.paciente.perfilpaciente_set.first()
+    # FIX: usar filter en vez de perfilpaciente_set
+    perfil = PerfilPaciente.objects.filter(user=foto.paciente).first()
     if not perfil or perfil.tutor != request.user:
         messages.error(request, "❌ No tenés permisos.")
         return redirect('fotos_mediciones')
@@ -420,3 +490,31 @@ def cargar_dato_medicion(request, foto_id):
             return redirect('fotos_mediciones')
 
     return render(request, 'core/cargar_dato.html', {'foto': foto})
+
+@login_required
+def procesar_documento(request, foto_id):
+    if solo_tutor(request):
+        return redirect('dashboard')
+    foto = get_object_or_404(FotoDocumento, pk=foto_id)
+    perfil = PerfilPaciente.objects.filter(user=foto.paciente).first()
+    if not perfil or perfil.tutor != request.user:
+        messages.error(request, '❌ No tenés permisos.')
+        return redirect('fotos_mediciones')
+    foto.procesada = True
+    foto.comentario_luis = 'Revisado por el tutor'
+    foto.save()
+    messages.success(request, '✅ Documento marcado como revisado.')
+    return redirect('fotos_mediciones')
+
+@login_required
+def rechazar_documento(request, foto_id):
+    if solo_tutor(request):
+        return redirect('dashboard')
+    foto = get_object_or_404(FotoDocumento, pk=foto_id)
+    perfil = PerfilPaciente.objects.filter(user=foto.paciente).first()
+    if not perfil or perfil.tutor != request.user:
+        messages.error(request, '❌ No tenés permisos.')
+        return redirect('fotos_mediciones')
+    foto.delete()
+    messages.success(request, '✅ Documento eliminado.')
+    return redirect('fotos_mediciones')

@@ -31,7 +31,7 @@
                                 {{ paciente.user.first_name }} {{ paciente.user.last_name }}
                             </p>
                             <p class="patient-info-type">
-                                <span class="patient-type-badge">Adulto Mayor</span>
+                                <span class="patient-type-badge">Paciente</span>
                             </p>
                             <p class="patient-info-user">
                                 Usuario: {{ paciente.user.username }}
@@ -39,10 +39,10 @@
                         </div>
                         
                         <div class="patient-actions">
-                            <a href="{% url 'seleccionar_paciente' paciente.id %}" class="btn-reponer-mini" style="text-decoration: none; background: var(--celeste-neon); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                            <a href="{% url 'seleccionar_paciente' paciente.id %}" class="btn-primary" style="text-decoration: none; background: var(--celeste-neon); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
                                 Seleccionar
                             </a>
-                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.id }}" class="btn-reponer-mini" style="text-decoration: none; background: var(--azul-profundo); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.id }}" class="btn-salir" style="text-decoration: none; background: var(--azul-profundo); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
                                 Ver Perfil
                             </a>
                         </div>
@@ -52,7 +52,7 @@
             {% else %}
                 <div class="no-patients">
                     <p>📭 No hay pacientes vinculados aún</p>
-                    <p>Ve a <a href="{% url 'vincular_anciano' %}">Vincular</a> para agregar un paciente</p>
+                    <p>Ve a <a href="{% url 'vincular_paciente' %}">Vincular</a> para agregar un paciente</p>
                 </div>
             {% endif %}
         </div>
@@ -60,7 +60,7 @@
         {# Botón Vincular Nuevo #}
         {% if pacientes %}
         <div class="tutor-actions">
-            <a href="{% url 'vincular_anciano' %}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 16px 30px; font-size: 1.05rem;">
+            <a href="{% url 'vincular_paciente' %}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 16px 30px; font-size: 1.05rem;">
                 + Vincular Otro Paciente
             </a>
         </div>

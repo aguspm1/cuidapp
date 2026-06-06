@@ -1,10 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Medicamento, PerfilPaciente
+from .models import Medicamento, PerfilPaciente, FotoDocumento
 
 class RegistroForm(UserCreationForm):
-    ROLES = (('anciano', 'Anciano (App)'), ('tutor', 'Tutor (Gestión Web)'))
+    ROLES = (('paciente', 'Paciente (App móvil)'), ('tutor', 'Tutor (Panel web)'))
     rol = forms.ChoiceField(choices=ROLES, label="¿Quién sos?")
     class Meta:
         model = User
@@ -62,4 +62,19 @@ class MedicamentoForm(forms.ModelForm):
             'stock_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cantidad en caja estándar'}),
             'umbral_stock_minimo': forms.NumberInput(attrs={'class': 'form-control'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class SubirFotoForm(forms.ModelForm):
+    class Meta:
+        model = FotoDocumento
+        fields = ['tipo', 'imagen', 'comentario_ana'] # Usá los campos de tu modelo
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-control', 'style': 'padding: 10px; width: 100%; border-radius: 6px;'}),
+            'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*,application/pdf'}),
+            'comentario_ana': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ej: Dejo la orden de la obra social...', 'style': 'width: 100%; border-radius: 6px; padding: 10px;'}),
+        }
+        labels = {
+            'tipo': '¿Qué tipo de documento es?',
+            'imagen': 'Seleccionar Foto o PDF',
+            'comentario_ana': 'Nota del paciente (opcional)',
         }

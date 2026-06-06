@@ -263,9 +263,20 @@ body {
 
 .btn-add-med {
     text-decoration: none;
-    color: var(--celeste-neon);
-    font-weight: bold;
+    color: white;
+    background: var(--azul-profundo);
+    font-weight: 700;
     cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: inline-block;
+}
+
+.btn-add-med:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
 }
 
 .card-meds-header {
@@ -391,17 +402,20 @@ body {
 
 .btn-mini-text {
     text-decoration: none;
-    padding: 8px 15px;
-    border-radius: 6px;
-    background: var(--celeste-neon);
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: var(--azul-profundo);
     color: white;
     font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    display: inline-block;
 }
 
 .btn-mini-text:hover {
-    opacity: 0.9;
+    opacity: 0.85;
+    transform: translateY(-1px);
 }
 
 .lista-eventos {
@@ -988,4 +1002,110 @@ select:focus {
     .doc-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
+}
+
+/* ============================================================
+   FULLCALENDAR — botones consistentes con el diseño
+   ============================================================ */
+
+/* Botones de navegación (prev, next, today, mes, semana) */
+.fc .fc-button {
+    background: var(--azul-profundo) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    padding: 8px 16px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    box-shadow: none !important;
+}
+
+.fc .fc-button:hover {
+    opacity: 0.85 !important;
+    transform: translateY(-1px) !important;
+}
+
+.fc .fc-button:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Botón activo (vista seleccionada) */
+.fc .fc-button-active,
+.fc .fc-button:not(:disabled):active {
+    background: var(--celeste-neon) !important;
+    color: var(--azul-profundo) !important;
+    opacity: 1 !important;
+}
+
+/* Grupo de botones (prev/next juntos) */
+.fc .fc-button-group .fc-button {
+    border-radius: 0 !important;
+}
+.fc .fc-button-group .fc-button:first-child {
+    border-radius: 8px 0 0 8px !important;
+}
+.fc .fc-button-group .fc-button:last-child {
+    border-radius: 0 8px 8px 0 !important;
+}
+
+/* Título del mes */
+.fc .fc-toolbar-title {
+    color: var(--azul-profundo);
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+}
+
+/* Cabecera de días */
+.fc .fc-col-header-cell {
+    background: var(--azul-profundo);
+    color: white;
+    padding: 10px 0;
+    font-weight: 600;
+}
+
+/* Eventos en el calendario */
+.fc-event {
+    border-radius: 6px !important;
+    border: none !important;
+    padding: 2px 6px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+/* ============================================================
+   BTN-SALIR — visible sobre fondos claros
+   ============================================================ */
+
+.btn-salir {
+    background: transparent;
+    color: var(--azul-profundo);
+    border: 2px solid var(--azul-profundo);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.btn-salir:hover {
+    background: var(--azul-profundo);
+    color: white;
+}
+
+/* En el header sí va sobre fondo oscuro */
+.main-header .btn-salir {
+    color: white !important;
+    border-color: white !important;
+}
+
+.main-header .btn-salir:hover {
+    background: white !important;
+    color: var(--azul-profundo) !important;
 }

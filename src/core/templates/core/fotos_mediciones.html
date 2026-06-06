@@ -11,9 +11,16 @@
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">📸 Documentos Médicos</h2>
-            <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px;">
-                Ver Mediciones 📊
-            </a>
+            
+            <div style="display: flex; gap: 12px;">
+                <!-- CAMBIO 1: Botón para que cualquiera (especialmente el paciente) pueda subir un documento -->
+                <a href="{% url 'subir_foto' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px; background-color: #2ecc71;">
+                    ➕ Subir Foto / PDF
+                </a>
+                <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px;">
+                    Ver Mediciones 📊
+                </a>
+            </div>
         </div>
 
         {# Filtros por tipo #}
@@ -39,9 +46,20 @@
                         {{ foto.get_tipo_display }}
                     </div>
                     
-                    {# Imagen #}
+                    {# Imagen o PDF #}
                     {% if foto.imagen %}
-                    <img src="{{ foto.imagen.url }}" class="doc-card-image">
+                        {% if ".pdf" in foto.imagen.url|lower %}
+                        <a href="{{ foto.imagen.url }}" target="_self" style="display:block; text-decoration:none;">
+                            <div class="doc-card-image" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff5f5; border:2px dashed #e74c3c; gap:8px;">
+                                <span style="font-size:2.5rem;">📄</span>
+                                <span style="font-size:0.85rem; font-weight:700; color:#c0392b;">PDF — Click para abrir</span>
+                            </div>
+                        </a>
+                        {% else %}
+                        <a href="{{ foto.imagen.url }}" target="_blank">
+                            <img src="{{ foto.imagen.url }}" class="doc-card-image" style="cursor:zoom-in;" title="Click para ver en tamaño completo">
+                        </a>
+                        {% endif %}
                     {% else %}
                     <div class="doc-card-no-image">Sin imagen</div>
                     {% endif %}
@@ -52,24 +70,34 @@
                         
                         {% if foto.comentario_ana %}
                         <p class="doc-card-comment">
-                            <strong>Ana:</strong> "{{ foto.comentario_ana }}"
+                            <strong>{{ foto.paciente.first_name|default:foto.paciente.username }}:</strong> "{{ foto.comentario_ana }}"
                         </p>
                         {% endif %}
                         
-                        {# Acciones según tipo #}
-                        {% if foto.tipo == 'medicion' %}
-                        <a href="{% url 'cargar_dato' foto.id %}" class="btn-primary" style="width: 100%; text-decoration: none; text-align: center; display: block; margin-top: 15px; padding: 12px; font-size: 0.95rem;">
-                            + Cargar Datos
-                        </a>
+                        <!-- CAMBIO 2: Condicional de Rol para las acciones administrativas -->
+                        {% if usuario_es_tutor %}
+                            {# ACCIONES EXCLUSIVAS DEL TUTOR #}
+                            {% if foto.tipo == 'medicion' %}
+                            <a href="{% url 'cargar_dato' foto.id %}" class="btn-primary" style="width: 100%; text-decoration: none; text-align: center; display: block; margin-top: 15px; padding: 12px; font-size: 0.95rem;">
+                                + Cargar Datos
+                            </a>
+                            {% else %}
+                            <div class="doc-card-actions" style="display:flex; gap:10px; margin-top:15px;">
+                                <form method="POST" action="/fotos-mediciones/{{ foto.id }}/procesar/" style="flex:1;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-primary" style="width:100%; padding:12px; font-size:0.9rem;">✓ Revisar</button>
+                                </form>
+                                <form method="POST" action="/fotos-mediciones/{{ foto.id }}/rechazar/" style="flex:1;" onsubmit="return confirm('¿Eliminar este documento?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-reject" style="width:100%; padding:12px; font-size:0.9rem;">✗ Rechazar</button>
+                                </form>
+                            </div>
+                            {% endif %}
                         {% else %}
-                        <div class="doc-card-actions">
-                            <button onclick="processDocument({{ foto.id }})" class="btn-primary" style="padding: 12px; font-size: 0.9rem;">
-                                ✓ Revisar
-                            </button>
-                            <button onclick="rejectDocument({{ foto.id }})" class="btn-reject">
-                                ✗ Rechazar
-                            </button>
-                        </div>
+                            {# VISTA PARA EL PACIENTE (Aviso amigable) #}
+                            <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fef9e7; border-radius: 6px; color: #b7950b; font-size: 0.9rem; font-weight: bold;">
+                                ⏳ Tu tutor está revisando este documento
+                            </div>
                         {% endif %}
                     </div>
                 </div>
@@ -98,19 +126,18 @@
                     
                     {# Imagen #}
                     {% if foto.imagen %}
-                    <img src="{{ foto.imagen.url }}" class="doc-card-processed-image">
-                    {% else %}
-                    <div class="doc-card-processed-no-image">Sin imagen</div>
-                    {% endif %}
-                    
-                    <div class="doc-card-processed-footer">
-                        <p class="doc-card-processed-date">{{ foto.fecha_subida|date:"d/m/Y" }}</p>
-                        <p class="doc-card-processed-status">Revisado ✓</p>
-                        {% if foto.comentario_luis %}
-                        <p class="doc-card-processed-note">{{ foto.comentario_luis|truncatewords:10 }}</p>
+                        {% if ".pdf" in foto.imagen.url|lower %}
+                        <div style="height: 150px; background: #ffebee; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="font-size: 2rem;">📄</span>
+                            <span style="font-size: 0.85rem; font-weight: bold; color: #c62828;">ARCHIVO PDF</span>
+                        </div>
+                        {% else %}
+                        <img src="{{ foto.imagen.url }}" class="doc-card-processed-image">
                         {% endif %}
-                    </div>
-                </div>
+                    {% else %}
+                        <div class="doc-card-processed-no-image">Sin imagen</div>
+                    {% endif %}
+                                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -119,13 +146,5 @@
     </div>
 </main>
 
-<script>
-function processDocument(fotoId) {
-    alert('Documento revisado: ' + fotoId);
-}
 
-function rejectDocument(fotoId) {
-    alert('Documento rechazado: ' + fotoId);
-}
-</script>
 {% endblock %}

@@ -7,10 +7,10 @@
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
-                {{ nombre_anciano|slice:":1"|upper }}
+                {{ nombre_paciente|slice:":1"|upper }}
             </a>
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text">
-                <h3>{{ nombre_anciano }}</h3>
+                <h3>{{ nombre_paciente }}</h3>
                 <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
@@ -55,7 +55,7 @@
         {% endif %}
     {% endfor %}
 
-    <!-- PESTAÑAS -->
+    <!-- PESTAÑAS (Accesos Directos) -->
     <div class="grid-shortcuts">
         <button id="btn-tab-cal" class="shortcut-btn" onclick="mostrarPestana('cal')">
             <span class="shortcut-icon">📅</span>
@@ -68,12 +68,11 @@
             <span>Medicamentos</span>
         </button>
 
-        {% if usuario_es_tutor %}
+        <!-- SE CORRIGIÓ ACÁ: Ahora "Fotos" es visible tanto para tutor como para paciente -->
         <a href="{% url 'fotos_mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📸</span>
             <span>Fotos</span>
         </a>
-        {% endif %}
 
         <a href="{% url 'mediciones' %}" class="shortcut-btn">
             <span class="shortcut-icon">📊</span>

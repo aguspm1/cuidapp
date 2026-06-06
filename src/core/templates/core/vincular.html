@@ -1,16 +1,17 @@
+
 {% extends 'core/base.html' %}
 {% load static %}
-
+ 
 {% block content %}
 <main class="main-content">
     <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
-
+ 
     <div class="card-sobria vincular-container">
-        <h2 class="vincular-title">👥 Vincular Adulto Mayor</h2>
+        <h2 class="vincular-title">👥 Vincular Paciente</h2>
         <p class="vincular-description">
             Ingresá el <strong>nombre de usuario</strong> de la persona que vas a cuidar para ver su medicación y turnos.
         </p>
-
+ 
         <form method="POST">
             {% csrf_token %}
             
@@ -23,20 +24,20 @@
             {% endif %}
             
             <div class="form-group-vincular">
-                <label for="username_anciano" class="form-label-vincular">
-                    Nombre de usuario (Anciano)
+                <label for="username_paciente" class="form-label-vincular">
+                    Nombre de usuario del paciente
                 </label>
                 <input type="text" 
-                       name="username_anciano" 
-                       id="username_anciano" 
+                       name="username_paciente" 
+                       id="username_paciente" 
                        class="input-vincular"
                        placeholder="Ej: agustin2026" 
                        required>
             </div>
-
+ 
             <button type="submit" class="btn-vincular">Vincular Cuenta</button>
         </form>
     </div>
-
+ 
 </main>
 {% endblock %}

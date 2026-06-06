@@ -1,15 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import User
-
-# --- 1. PERFIL DE PACIENTE (La ficha que Luis edita) ---
+from django.core.validators import FileExtensionValidator
+ 
+# --- 1. PERFIL DE PACIENTE ---
 class PerfilPaciente(models.Model):
-    # Relación con el User que es el paciente (Ana)
+    # Relación con el User paciente
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_medico')
     
-    # El tutor asignado (Luis)
+    # El tutor asignado
     tutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='pacientes_a_cargo')
     
-    # Datos biométricos y médicos (Cargados por Luis)
+    # Datos biométricos y médicos
     fecha_nacimiento = models.DateField(null=True, blank=True)
     grupo_sanguineo = models.CharField(max_length=5, blank=True)
     alergias = models.TextField(blank=True, verbose_name="Alergias Conocidas")
@@ -19,16 +20,16 @@ class PerfilPaciente(models.Model):
     obra_social = models.CharField(max_length=100, blank=True, verbose_name="Obra Social")
     plan = models.CharField(max_length=100, blank=True, verbose_name="Plan")
     numero_afiliado = models.CharField(max_length=50, blank=True, verbose_name="Número de Afiliado")
-
-    # Configuración de Controles (Lo que Ana debe hacerse)
+ 
+    # Controles médicos requeridos
     requiere_control_presion = models.BooleanField(default=False)
     requiere_control_glucosa = models.BooleanField(default=False)
     requiere_control_peso = models.BooleanField(default=False)
-
+ 
     def __str__(self):
         return f"Perfil de {self.user.username} (Tutor: {self.tutor.username if self.tutor else 'Sin asignar'})"
-
-
+ 
+ 
 # --- 2. MEDICACIÓN Y CALENDARIO 
 class Medicamento(models.Model):
     PRESENTACION_CHOICES = [
@@ -44,7 +45,7 @@ class Medicamento(models.Model):
         ('ml', 'ml'),
         ('mg', 'mg'),
     ]
-
+ 
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='medicamentos')
     nombre = models.CharField(max_length=100)
     tipo_presentacion = models.CharField(max_length=20, choices=PRESENTACION_CHOICES, default='comprimido')
@@ -63,9 +64,9 @@ class Medicamento(models.Model):
     ]
     
     frecuencia_tipo = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES, default='fijo')
-    horario_fijo = models.CharField(max_length=100, blank=True, help_text="Ej: 08:00 hs")
-    evento_toma = models.CharField(max_length=100, blank=True, help_text="Ej: al levantarse, antes de acostarse")
-    cada_cuantas_horas = models.IntegerField(default=8, help_text="Solo si frecuencia_tipo='fijo'")
+    horario_fijo = models.CharField(max_length=200, blank=True, help_text="Ej: 08:00, 14:00, 20:00")
+    evento_toma = models.CharField(max_length=200, blank=True, help_text="Ej: al levantarse, antes de acostarse")
+    cada_cuantas_horas = models.IntegerField(null=True, blank=True, help_text="Ej: 6, 8, 12, 24")
     
     duracion_tipo = models.CharField(max_length=20, choices=TIPO_DURACION_CHOICES, default='cronico')
     fecha_inicio = models.DateField(auto_now_add=True)
@@ -79,20 +80,22 @@ class Medicamento(models.Model):
     activo = models.BooleanField(default=True)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
-
+ 
     def __str__(self):
         return f"{self.nombre} - {self.paciente.username}"
     
+    @property
     def tiene_stock_bajo(self):
         return self.stock_actual <= self.umbral_stock_minimo
     
+    @property
     def tomas_restantes(self):
         """Cuántas tomas completas se pueden dar con stock actual"""
         if self.dosis_por_toma == 0:
             return 0
         return int(self.stock_actual / self.dosis_por_toma)
-
-
+ 
+ 
 class RegistroToma(models.Model):
     """Historial inmutable de cada toma registrada"""
     medicamento = models.ForeignKey(Medicamento, on_delete=models.CASCADE, related_name='registros_toma')
@@ -105,11 +108,10 @@ class RegistroToma(models.Model):
     
     def __str__(self):
         return f"{self.medicamento.nombre} - {self.paciente.username} ({self.fecha_hora.date()})"
-
+ 
 # --- 3. GESTIÓN DE MEDICIONES (Fotos y Datos) ---
-
+ 
 class FotoDocumento(models.Model):
-    """ Documentos fotográficos que Ana sube: mediciones, recetas, indicaciones, etc. """
     TIPO_CHOICES = [
         ('medicion', 'Foto de Medición'),
         ('receta', 'Receta Médica'),
@@ -118,25 +120,25 @@ class FotoDocumento(models.Model):
     ]
     
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fotos_documentos')
-    imagen = models.ImageField(upload_to='documentos/fotos/')
+    imagen = models.FileField(upload_to='documentos/fotos/')
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='medicion')
     fecha_subida = models.DateTimeField(auto_now_add=True)
-    procesada = models.BooleanField(default=False) # True cuando Luis revisa/procesa
+    procesada = models.BooleanField(default=False) # True cuando el tutor revisa
     comentario_ana = models.CharField(max_length=255, blank=True)
-    comentario_luis = models.CharField(max_length=255, blank=True) # Lo que Luis anota
-
+    comentario_luis = models.CharField(max_length=255, blank=True) # Comentario del tutor
+ 
     class Meta:
         verbose_name_plural = "Documentos (Fotos)"
         ordering = ['-fecha_subida']
-
+ 
     def __str__(self):
         return f"{self.get_tipo_display()} - {self.paciente.username} ({self.fecha_subida.date()})"
-
+ 
 # Compatibilidad hacia atrás
 FotoMedicion = FotoDocumento
-
+ 
 class DatoMedicion(models.Model):
-    """ Datos numéricos que Luis carga basándose en la foto de Ana """
+    """ Datos numéricos que el tutor carga a partir de una foto del paciente """
     TIPO_CHOICES = [
         ('presion', 'Presión Arterial'),
         ('glucosa', 'Glucosa'),
@@ -152,11 +154,11 @@ class DatoMedicion(models.Model):
     
     fecha_registro = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True)
-
+ 
     class Meta:
         ordering = ['-fecha_registro']
         verbose_name_plural = "Datos de Mediciones"
-
+ 
     def __str__(self):
         return f"{self.get_tipo_display()}: {self.valor_1}/{self.valor_2 if self.valor_2 else ''} ({self.paciente.username})"
     
@@ -179,4 +181,4 @@ class EventoCalendario(models.Model):
         ordering = ['fecha_hora']
  
     def __str__(self):
-        return f"{self.titulo} - {self.fecha_hora.date()}"    
+        return f"{self.titulo} - {self.fecha_hora.date()}"

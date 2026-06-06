@@ -59,15 +59,12 @@
                     </div>
                 </div>
 
-                {# Campo oculto FUERA de cualquier div con display:none #}
-                <input type="hidden" name="horario_fijo" id="id_horario_fijo" value="">
-
-                <!-- Opción A: Horario fijo -->
+                <!-- Opción A: Horario fijo — campos time con name=horario_N, la vista los une -->
                 <div id="campos-fijo" class="frecuencia-panel" style="display: none;">
                     <div class="form-group">
                         <label>Horario/s de toma</label>
                         <div id="horarios-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                            <input type="time" class="form-control horario-input" style="width: 140px;">
+                            <input type="time" name="horario_0" class="form-control" style="width: 140px;">
                         </div>
                         <button type="button" onclick="agregarHorario()" style="background: none; border: 2px dashed var(--azul-profundo); color: var(--azul-profundo); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
                             + Agregar otro horario
@@ -220,33 +217,18 @@ document.addEventListener('DOMContentLoaded', function() {
     actualizarDuracion();
 
     // Juntar los time pickers en el campo oculto antes de enviar
-    // Setear el valor ANTES del submit usando el botón directamente
-    document.querySelector('button[type="submit"]').addEventListener('click', function(e) {
-        const frecuencia = document.querySelector('input[name="frecuencia_tipo"]:checked')?.value;
-        if (frecuencia === 'fijo') {
-            const inputs = document.querySelectorAll('.horario-input');
-            const valores = Array.from(inputs)
-                .map(i => i.value.trim())
-                .filter(v => v !== '');
-            if (valores.length === 0) {
-                e.preventDefault();
-                alert('Por favor ingresá al menos un horario de toma.');
-                return;
-            }
-            document.getElementById('id_horario_fijo').value = valores.join(', ');
-            console.log('horario_fijo seteado:', document.getElementById('id_horario_fijo').value);
-        }
-    });
+
 });
 
 function agregarHorario() {
     const container = document.getElementById('horarios-container');
+    const idx = container.querySelectorAll('input[type=time]').length;
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '6px';
     wrapper.innerHTML = `
-        <input type="time" class="form-control horario-input" style="width: 140px;">
+        <input type="time" name="horario_${idx}" class="form-control" style="width: 140px;">
         <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#e74c3c; font-size:1.2rem; cursor:pointer; padding:0;">✕</button>
     `;
     container.appendChild(wrapper);

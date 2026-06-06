@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card">
+
+        <a href="{% url 'fotos_mediciones' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; display: block; margin-bottom: 25px;">
+            ← Volver a Documentos
+        </a>
+
+        <h2 class="card-title">📎 Subir Documento</h2>
+        <p style="color: #666; margin-bottom: 25px;">Podés subir fotos de mediciones, recetas o indicaciones médicas.</p>
+
+        <form method="POST" enctype="multipart/form-data" class="auth-form-django">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label>Tipo de documento</label>
+                <select name="tipo" class="form-control" required style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:1rem;">
+                    <option value="medicion">📏 Foto de Medición</option>
+                    <option value="receta">💊 Receta Médica</option>
+                    <option value="indicacion">📝 Indicación Médica</option>
+                    <option value="otro">📄 Otro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Archivo (foto o PDF)</label>
+                <input type="file" name="imagen" accept="image/*,.pdf" required class="form-control">
+                <small style="color:#94a3b8;">Formatos: JPG, PNG, PDF. Máximo 5MB.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Nota para el tutor (opcional)</label>
+                <input type="text" name="comentario_ana" class="form-control" placeholder="Ej: Presión tomada esta mañana en ayunas">
+            </div>
+
+            <div style="display:flex; gap:15px; margin-top:25px;">
+                <button type="submit" class="btn-primary" style="flex:1;">📤 Subir Documento</button>
+                <a href="{% url 'fotos_mediciones' %}" class="btn-salir" style="flex:0.6; text-decoration:none; display:flex; align-items:center; justify-content:center; padding:16px;">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock %}
