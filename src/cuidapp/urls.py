@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -16,6 +15,7 @@ urlpatterns = [
     path('nuevo-medicamento/', views.nuevo_medicamento, name='nuevo_medicamento'),
     path('registrar-toma/<int:medicamento_id>/', views.registrar_toma, name='registrar_toma'),
     path('reponer-medicamento/<int:medicamento_id>/', views.reponer_medicamento, name='reponer_medicamento'),
+    path('editar-medicamento/<int:pk>/', views.editar_medicamento, name='editar_medicamento'),
     path('eliminar-medicamento/<int:pk>/', views.eliminar_medicamento, name='eliminar_medicamento'),
  
     # Calendario

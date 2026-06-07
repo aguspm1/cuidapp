@@ -16,6 +16,20 @@
             </a>
         </div>
 
+        {# Si no hay ningún dato en ninguna categoría #}
+        {% if not mediciones_presion and not mediciones_peso and not mediciones_glucosa %}
+        <div class="card-sobria" style="padding: 60px 40px; text-align: center; border: 2px dashed #e2e8f0;">
+            <p style="font-size: 3rem; margin-bottom: 15px;">📊</p>
+            <h3 style="color: var(--azul-profundo); margin-bottom: 10px;">Sin mediciones registradas</h3>
+            <p style="color: #666; margin-bottom: 30px;">Todavía no hay datos cargados. El tutor puede subir fotos de mediciones y cargar los valores.</p>
+            {% if usuario_es_tutor %}
+            <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 30px; display: inline-block;">
+                📸 Ir a Fotos / Documentos
+            </a>
+            {% endif %}
+        </div>
+        {% else %}
+
         {# Presión Arterial #}
         {% if mediciones_presion %}
         <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #e74c3c;">
@@ -114,6 +128,8 @@
         </div>
         {% endif %}
 
+    </div>
+        {% endif %}{# cierre del else de sin-mediciones #}
     </div>
 </main>
 {% endblock %}

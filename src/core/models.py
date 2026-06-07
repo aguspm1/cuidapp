@@ -120,12 +120,12 @@ class FotoDocumento(models.Model):
     ]
     
     paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fotos_documentos')
-    imagen = models.FileField(upload_to='documentos/fotos/')
+    imagen = models.FileField(upload_to='documentos/fotos/', validators=[FileExtensionValidator(['jpg', 'jpeg', 'png', 'pdf'])])
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='medicion')
     fecha_subida = models.DateTimeField(auto_now_add=True)
     procesada = models.BooleanField(default=False) # True cuando el tutor revisa
-    comentario_ana = models.CharField(max_length=255, blank=True)
-    comentario_luis = models.CharField(max_length=255, blank=True) # Comentario del tutor
+    nota_paciente = models.CharField(max_length=255, blank=True)
+    nota_tutor = models.CharField(max_length=255, blank=True) # Nota del tutor
  
     class Meta:
         verbose_name_plural = "Documentos (Fotos)"
@@ -138,7 +138,7 @@ class FotoDocumento(models.Model):
 FotoMedicion = FotoDocumento
  
 class DatoMedicion(models.Model):
-    """ Datos numéricos que el tutor carga a partir de una foto del paciente """
+    """ Datos numéricos cargados por el tutor a partir de una foto del paciente """
     TIPO_CHOICES = [
         ('presion', 'Presión Arterial'),
         ('glucosa', 'Glucosa'),
@@ -181,4 +181,4 @@ class EventoCalendario(models.Model):
         ordering = ['fecha_hora']
  
     def __str__(self):
-        return f"{self.titulo} - {self.fecha_hora.date()}"
+        return f"{self.titulo} - {self.fecha_hora.date()}"   

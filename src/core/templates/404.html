@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card" style="text-align: center; padding: 60px 40px;">
+        <div style="font-size: 5rem; margin-bottom: 20px;">🔍</div>
+        <h2 style="color: var(--azul-profundo); font-size: 2rem; margin-bottom: 15px;">Página no encontrada</h2>
+        <p style="color: #666; font-size: 1.1rem; margin-bottom: 35px;">
+            La página que buscás no existe o fue movida.
+        </p>
+        <a href="{% url 'dashboard' %}" class="btn-primary" style="width: auto; padding: 16px 35px; text-decoration: none; display: inline-block;">
+            Volver al inicio
+        </a>
+    </div>
+</main>
+{% endblock %}

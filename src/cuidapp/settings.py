@@ -129,3 +129,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+handler404 = 'core.views.error_404'
+handler500 = 'core.views.error_500'
+ 

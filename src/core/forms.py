@@ -5,7 +5,7 @@ from .models import Medicamento, PerfilPaciente, FotoDocumento
 
 class RegistroForm(UserCreationForm):
     ROLES = (('paciente', 'Paciente (App móvil)'), ('tutor', 'Tutor (Panel web)'))
-    rol = forms.ChoiceField(choices=ROLES, label="¿Quién sos?")
+    rol = forms.ChoiceField(choices=ROLES, label="¿Cuál es tu rol?", widget=forms.RadioSelect())
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email']
@@ -67,14 +67,14 @@ class MedicamentoForm(forms.ModelForm):
 class SubirFotoForm(forms.ModelForm):
     class Meta:
         model = FotoDocumento
-        fields = ['tipo', 'imagen', 'comentario_ana'] # Usá los campos de tu modelo
+        fields = ['tipo', 'imagen', 'nota_paciente']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-control', 'style': 'padding: 10px; width: 100%; border-radius: 6px;'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*,application/pdf'}),
-            'comentario_ana': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ej: Dejo la orden de la obra social...', 'style': 'width: 100%; border-radius: 6px; padding: 10px;'}),
+            'nota_paciente': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ej: Dejo la orden de la obra social...', 'style': 'width: 100%; border-radius: 6px; padding: 10px;'}),
         }
         labels = {
             'tipo': '¿Qué tipo de documento es?',
             'imagen': 'Seleccionar Foto o PDF',
-            'comentario_ana': 'Nota del paciente (opcional)',
+            'nota_paciente': 'Nota del paciente (opcional)',
         }

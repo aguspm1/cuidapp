@@ -68,9 +68,9 @@
                     <div class="doc-card-content">
                         <p class="doc-card-date">{{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
                         
-                        {% if foto.comentario_ana %}
+                        {% if foto.nota_paciente %}
                         <p class="doc-card-comment">
-                            <strong>{{ foto.paciente.first_name|default:foto.paciente.username }}:</strong> "{{ foto.comentario_ana }}"
+                            <strong>{{ foto.paciente.first_name|default:foto.paciente.username }}:</strong> "{{ foto.nota_paciente }}"
                         </p>
                         {% endif %}
                         

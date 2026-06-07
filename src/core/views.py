@@ -115,19 +115,39 @@ def registro(request):
 # ========== 3. VINCULACIÓN ==========
 @login_required
 def vincular_paciente(request):
+    # Solo tutores pueden vincular — si es paciente, redirigir
+    if es_paciente(request.user):
+        messages.error(request, "❌ Solo los tutores pueden vincular pacientes.")
+        return redirect('dashboard')
+
     if request.method == 'POST':
-        user_buscado = request.POST.get('username_paciente')
+        user_buscado = request.POST.get('username_paciente', '').strip()
+
+        # No puede vincularse a sí mismo
+        if user_buscado == request.user.username:
+            messages.error(request, "❌ No podés vincularte a vos mismo.")
+            return render(request, 'core/vincular.html')
+
         try:
             paciente_user_nuevo = User.objects.get(username=user_buscado)
             perfil = PerfilPaciente.objects.get(user=paciente_user_nuevo)
+
+            # Avisar si ya tiene tutor asignado
+            if perfil.tutor and perfil.tutor != request.user:
+                messages.warning(request, f"⚠️ {user_buscado} ya tenía un tutor asignado. Se actualizó al tutor actual.")
+
             perfil.tutor = request.user
             perfil.save()
-            messages.success(request, f"✅ Vinculado con éxito a {user_buscado}")
+            request.session['paciente_seleccionado'] = perfil.id
+            nombre = paciente_user_nuevo.get_full_name() or user_buscado
+            messages.success(request, f"✅ Vinculado con éxito a {nombre}.")
             return redirect('dashboard')
+
         except User.DoesNotExist:
-            messages.error(request, "❌ No se encontró el usuario")
+            messages.error(request, "❌ No se encontró el usuario. Verificá que el nombre esté bien escrito.")
         except PerfilPaciente.DoesNotExist:
-            messages.error(request, "❌ El usuario no tiene perfil creado")
+            messages.error(request, "❌ Ese usuario no se registró como paciente.")
+
     return render(request, 'core/vincular.html')
 
 
@@ -272,6 +292,9 @@ def registrar_toma(request, medicamento_id):
             paciente=request.user,
             cantidad_tomada=med.dosis_por_toma
         )
+        if med.stock_actual <= 0:
+            messages.error(request, f"❌ Sin stock: {med.nombre}.")
+            return redirect('dashboard')
         med.stock_actual = max(0, med.stock_actual - med.dosis_por_toma)
         med.save()
         if med.tiene_stock_bajo:  # @property, sin paréntesis
@@ -293,6 +316,46 @@ def reponer_medicamento(request, medicamento_id):
         med.save()
         messages.success(request, f"✅ Stock repuesto: {med.nombre} ({med.stock_total} {med.unidad_medida}).")
     return redirect('dashboard')
+
+@login_required
+def editar_medicamento(request, pk):
+    """Solo el tutor puede editar medicamentos de sus pacientes"""
+    if solo_tutor(request):
+        return redirect('dashboard')
+
+    med = get_object_or_404(Medicamento, pk=pk)
+    get_object_or_404(PerfilPaciente, tutor=request.user, user=med.paciente)
+
+    if request.method == 'POST':
+        horarios = []
+        i = 0
+        while True:
+            h = request.POST.get(f'horario_{i}', '').strip()
+            if h:
+                horarios.append(h)
+                i += 1
+            else:
+                break
+
+        post_data = request.POST.copy()
+        if horarios:
+            post_data['horario_fijo'] = ', '.join(horarios)
+
+        form = MedicamentoForm(post_data, instance=med)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"✅ {med.nombre} actualizado correctamente.")
+            return redirect('dashboard')
+        else:
+            messages.error(request, "❌ Error en el formulario.")
+    else:
+        form = MedicamentoForm(instance=med)
+
+    return render(request, 'core/editar_medicamento.html', {
+        'form': form,
+        'medicamento': med,
+    })
+
 
 @login_required
 def eliminar_medicamento(request, pk):
@@ -470,24 +533,38 @@ def cargar_dato_medicion(request, foto_id):
         return redirect('fotos_mediciones')
 
     if request.method == 'POST':
-        tipo   = request.POST.get('tipo')
-        valor1 = request.POST.get('valor_1')
-        valor2 = request.POST.get('valor_2')
-        obs    = request.POST.get('observaciones')
+        tipo = request.POST.get('tipo')
+        obs  = request.POST.get('observaciones', '')
+        valor1 = None
+        valor2 = None
+
+        # Leer directamente los campos según el tipo — sin depender del JS
+        if tipo == 'presion':
+            valor1 = request.POST.get('sistolica')
+            valor2 = request.POST.get('diastolica')
+        elif tipo == 'peso':
+            valor1 = request.POST.get('peso')
+        elif tipo == 'glucosa':
+            valor1 = request.POST.get('glucosa')
 
         if tipo and valor1:
-            DatoMedicion.objects.create(
-                paciente      = foto.paciente,
-                tipo          = tipo,
-                valor_1       = float(valor1),
-                valor_2       = float(valor2) if valor2 else None,
-                observaciones = obs
-            )
-            foto.procesada       = True
-            foto.comentario_luis = f"Datos {tipo} cargados"
-            foto.save()
-            messages.success(request, "✅ Datos cargados correctamente.")
-            return redirect('fotos_mediciones')
+            try:
+                DatoMedicion.objects.create(
+                    paciente      = foto.paciente,
+                    tipo          = tipo,
+                    valor_1       = float(valor1),
+                    valor_2       = float(valor2) if valor2 else None,
+                    observaciones = obs
+                )
+                foto.procesada  = True
+                foto.nota_tutor = f"Datos {tipo} cargados"
+                foto.save()
+                messages.success(request, "✅ Datos cargados correctamente.")
+                return redirect('fotos_mediciones')
+            except ValueError:
+                messages.error(request, "❌ Los valores ingresados no son válidos.")
+        else:
+            messages.error(request, "❌ Seleccioná el tipo y completá los valores.")
 
     return render(request, 'core/cargar_dato.html', {'foto': foto})
 
@@ -501,7 +578,7 @@ def procesar_documento(request, foto_id):
         messages.error(request, '❌ No tenés permisos.')
         return redirect('fotos_mediciones')
     foto.procesada = True
-    foto.comentario_luis = 'Revisado por el tutor'
+    foto.nota_tutor = 'Revisado por el tutor'
     foto.save()
     messages.success(request, '✅ Documento marcado como revisado.')
     return redirect('fotos_mediciones')
@@ -518,3 +595,11 @@ def rechazar_documento(request, foto_id):
     foto.delete()
     messages.success(request, '✅ Documento eliminado.')
     return redirect('fotos_mediciones')
+
+
+# ========== 8. HANDLERS DE ERROR ==========
+def error_404(request, exception):
+    return render(request, '404.html', status=404)
+
+def error_500(request):
+    return render(request, '404.html', status=500)

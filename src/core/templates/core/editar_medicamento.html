@@ -1,0 +1,196 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card" style="max-width: 700px;">
+
+        <a href="{% url 'dashboard' %}" style="text-decoration:none; color:var(--azul-profundo); font-weight:bold; display:block; margin-bottom:25px;">
+            ← Volver al Dashboard
+        </a>
+
+        <h2 class="card-title">✏️ Editar Medicamento</h2>
+        <p style="text-align:center; color:#666; margin-bottom:30px;">
+            Modificá los datos de <strong>{{ medicamento.nombre }}</strong>
+        </p>
+
+        <form method="POST" class="auth-form-django">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="errorlist">
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Datos Básicos -->
+            <div style="background:#f0f4f8; padding:20px; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px; color:var(--azul-profundo);">📋 Datos Básicos</h4>
+                <div class="form-group">
+                    <label>Nombre del Medicamento</label>
+                    {{ form.nombre }}
+                    {% if form.nombre.errors %}<div class="errorlist">{{ form.nombre.errors }}</div>{% endif %}
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>{{ form.tipo_presentacion.label }}</label>
+                        {{ form.tipo_presentacion }}
+                    </div>
+                    <div class="form-group">
+                        <label>{{ form.unidad_medida.label }}</label>
+                        {{ form.unidad_medida }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>{{ form.dosis_por_toma.label }}</label>
+                    {{ form.dosis_por_toma }}
+                </div>
+            </div>
+
+            <!-- Frecuencia -->
+            <div style="background:#f0f4f8; padding:20px; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px; color:var(--azul-profundo);">⏰ Frecuencia</h4>
+                <div class="form-group">
+                    <label>Tipo de frecuencia</label>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+                        {% for radio in form.frecuencia_tipo %}
+                        <label class="radio-card">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <input type="hidden" name="horario_fijo" id="id_horario_fijo" value="{{ medicamento.horario_fijo }}">
+
+                <div id="campos-fijo" class="frecuencia-panel" style="display:none;">
+                    <div class="form-group">
+                        <label>Horario/s de toma</label>
+                        <div id="horarios-container" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                            {% for h in medicamento.horario_fijo.split %}
+                            {% if h %}
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <input type="time" name="horario_{{ forloop.counter0 }}" value="{{ h|slice:':5' }}" class="form-control" style="width:140px;">
+                                <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#e74c3c;font-size:1.2rem;cursor:pointer;">✕</button>
+                            </div>
+                            {% endif %}
+                            {% empty %}
+                            <input type="time" name="horario_0" class="form-control" style="width:140px;">
+                            {% endfor %}
+                        </div>
+                        <button type="button" onclick="agregarHorario()" style="background:none;border:2px dashed var(--azul-profundo);color:var(--azul-profundo);padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;">
+                            + Agregar horario
+                        </button>
+                    </div>
+                </div>
+
+                <div id="campos-intervalo" class="frecuencia-panel" style="display:none;">
+                    <div class="form-group">
+                        <label>{{ form.cada_cuantas_horas.label }}</label>
+                        {{ form.cada_cuantas_horas }}
+                    </div>
+                </div>
+
+                <div id="campos-evento" class="frecuencia-panel" style="display:none;">
+                    <div class="form-group">
+                        <label>{{ form.evento_toma.label }}</label>
+                        {{ form.evento_toma }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Duración -->
+            <div style="background:#f0f4f8; padding:20px; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px; color:var(--azul-profundo);">📅 Duración</h4>
+                <div class="form-group">
+                    <label>Tipo de tratamiento</label>
+                    <div style="display:flex; gap:20px; margin-top:10px;">
+                        {% for radio in form.duracion_tipo %}
+                        <label style="display:flex; align-items:center; gap:8px;">{{ radio.tag }} {{ radio.choice_label }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="campos-fecha-fin" style="display:none;">
+                    <div class="form-group">
+                        <label>{{ form.fecha_fin.label }}</label>
+                        {{ form.fecha_fin }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock -->
+            <div style="background:#f0f4f8; padding:20px; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px; color:var(--azul-profundo);">📦 Stock</h4>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label>{{ form.stock_actual.label }}</label>
+                        {{ form.stock_actual }}
+                    </div>
+                    <div class="form-group">
+                        <label>{{ form.stock_total.label }}</label>
+                        {{ form.stock_total }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>{{ form.umbral_stock_minimo.label }}</label>
+                    {{ form.umbral_stock_minimo }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:10px;">
+                    {{ form.activo }} {{ form.activo.label }}
+                </label>
+            </div>
+
+            <div style="display:flex; gap:15px; margin-top:25px;">
+                <button type="submit" class="btn-primary" style="flex:1;">💾 Guardar Cambios</button>
+                <a href="{% url 'dashboard' %}" class="btn-salir" style="flex:0.6; text-decoration:none; display:flex; align-items:center; justify-content:center; padding:16px;">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<style>
+.radio-card { display:flex; align-items:center; gap:8px; padding:10px 16px; border:2px solid #ddd; border-radius:8px; cursor:pointer; font-weight:500; transition:all 0.2s; background:white; }
+.radio-card:has(input:checked) { border-color:var(--azul-profundo); background:#e8f0fe; color:var(--azul-profundo); }
+.frecuencia-panel { margin-top:15px; padding:15px; background:white; border-radius:8px; border-left:4px solid var(--azul-profundo); }
+</style>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radiosFrecuencia = document.querySelectorAll('input[name="frecuencia_tipo"]');
+    const radiosDuracion   = document.querySelectorAll('input[name="duracion_tipo"]');
+
+    function actualizarFrecuencia() {
+        const val = document.querySelector('input[name="frecuencia_tipo"]:checked')?.value;
+        document.getElementById('campos-fijo').style.display      = val === 'fijo'      ? 'block' : 'none';
+        document.getElementById('campos-intervalo').style.display = val === 'intervalo' ? 'block' : 'none';
+        document.getElementById('campos-evento').style.display    = val === 'evento'    ? 'block' : 'none';
+    }
+
+    function actualizarDuracion() {
+        const val = document.querySelector('input[name="duracion_tipo"]:checked')?.value;
+        document.getElementById('campos-fecha-fin').style.display = val === 'temporal' ? 'block' : 'none';
+    }
+
+    radiosFrecuencia.forEach(r => r.addEventListener('change', actualizarFrecuencia));
+    radiosDuracion.forEach(r => r.addEventListener('change', actualizarDuracion));
+    actualizarFrecuencia();
+    actualizarDuracion();
+});
+
+let horarioCount = document.querySelectorAll('input[type="time"]').length;
+
+function agregarHorario() {
+    const container = document.getElementById('horarios-container');
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex; align-items:center; gap:6px;';
+    wrapper.innerHTML = `
+        <input type="time" name="horario_${horarioCount}" class="form-control" style="width:140px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#e74c3c;font-size:1.2rem;cursor:pointer;">✕</button>
+    `;
+    container.appendChild(wrapper);
+    horarioCount++;
+}
+</script>
+{% endblock %}
+{% endblock %}

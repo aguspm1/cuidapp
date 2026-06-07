@@ -3,6 +3,7 @@
 
 {% block content %}
 <main class="main-content">
+
     <!-- CABECERA -->
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
@@ -14,7 +15,6 @@
                 <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
-
         {% if pacientes_list|length > 1 and usuario_es_tutor %}
         <div class="dashboard-selector">
             <select onchange="location.href = this.value">
@@ -26,7 +26,6 @@
             </select>
         </div>
         {% endif %}
-
         <span class="status-badge">✓ Conectado</span>
     </div>
 
@@ -36,7 +35,7 @@
         <div class="status-card-mini"><span class="status-icon">📶</span> Señal Excelente</div>
     </div>
 
-    <!-- ALERTAS DE STOCK BAJO — solo tutor las ve con opción de reponer -->
+    <!-- ALERTAS DE STOCK BAJO -->
     {% for med in remedios %}
         {% if med.tiene_stock_bajo %}
         <div class="alerta-stock">
@@ -47,7 +46,7 @@
             {% if usuario_es_tutor %}
             <form method="POST" action="{% url 'reponer_medicamento' med.id %}" class="form-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn-mini-text" style="font-size:0.85rem; padding: 6px 14px;">Reponer caja</button>
+                <button type="submit" class="btn-mini-text">Reponer caja</button>
             </form>
             {% endif %}
             <button class="alerta-stock-cerrar" onclick="this.closest('.alerta-stock').remove()">✕</button>
@@ -55,42 +54,105 @@
         {% endif %}
     {% endfor %}
 
-    <!-- PESTAÑAS (Accesos Directos) -->
+    <!-- PESTAÑAS -->
     <div class="grid-shortcuts">
+        <button id="btn-tab-inicio" class="shortcut-btn active" onclick="mostrarPestana('inicio')">
+            <span class="shortcut-icon">🏠</span>
+            <span>Inicio</span>
+        </button>
+        <button id="btn-tab-meds" class="shortcut-btn" onclick="mostrarPestana('meds')">
+            <span class="shortcut-icon">💊</span>
+            <span>Medicamentos</span>
+        </button>
         <button id="btn-tab-cal" class="shortcut-btn" onclick="mostrarPestana('cal')">
             <span class="shortcut-icon">📅</span>
             <span>Calendario</span>
             {% if eventos_proximos %}<span class="tab-badge">{{ eventos_proximos|length }}</span>{% endif %}
         </button>
-
-        <button id="btn-tab-meds" class="shortcut-btn active" onclick="mostrarPestana('meds')">
-            <span class="shortcut-icon">💊</span>
-            <span>Medicamentos</span>
-        </button>
-
-        <!-- SE CORRIGIÓ ACÁ: Ahora "Fotos" es visible tanto para tutor como para paciente -->
-        <a href="{% url 'fotos_mediciones' %}" class="shortcut-btn">
+        <button id="btn-tab-fotos" class="shortcut-btn" onclick="mostrarPestana('fotos')">
             <span class="shortcut-icon">📸</span>
-            <span>Fotos</span>
-        </a>
-
-        <a href="{% url 'mediciones' %}" class="shortcut-btn">
+            <span>Documentos</span>
+        </button>
+        <button id="btn-tab-mediciones" class="shortcut-btn" onclick="mostrarPestana('mediciones')">
             <span class="shortcut-icon">📊</span>
             <span>Mediciones</span>
-        </a>
+        </button>
+    </div>
+
+    <!-- SECCIÓN INICIO -->
+    <div id="seccion-inicio" class="pestana-content active">
+        <div class="dash-grid-inicio">
+
+            {# Resumen medicamentos #}
+            <div class="card-sobria dash-resumen-card">
+                <div class="dash-resumen-header">
+                    <span class="dash-resumen-icon">💊</span>
+                    <h3>Medicamentos</h3>
+                </div>
+                {% if remedios %}
+                <p class="dash-resumen-num">{{ remedios|length }}</p>
+                <p class="dash-resumen-sub">medicamento{{ remedios|length|pluralize }} activo{{ remedios|length|pluralize }}</p>
+                {% for med in remedios %}
+                {% if med.tiene_stock_bajo %}
+                <div class="dash-resumen-alerta">⚠️ {{ med.nombre }} con stock bajo</div>
+                {% endif %}
+                {% endfor %}
+                {% else %}
+                <p class="dash-resumen-empty">Sin medicamentos cargados</p>
+                {% endif %}
+                <button onclick="mostrarPestana('meds')" class="dash-resumen-btn">Ver todos →</button>
+            </div>
+
+            {# Resumen próximo evento #}
+            <div class="card-sobria dash-resumen-card">
+                <div class="dash-resumen-header">
+                    <span class="dash-resumen-icon">📅</span>
+                    <h3>Próximo Evento</h3>
+                </div>
+                {% if eventos_proximos %}
+                {% with evento=eventos_proximos.0 %}
+                <p class="dash-resumen-num" style="font-size: 1.8rem;">{{ evento.fecha_hora|date:"d/m" }}</p>
+                <p class="dash-resumen-sub">{{ evento.fecha_hora|date:"H:i" }} hs</p>
+                <p style="font-weight: 700; color: var(--azul-profundo); margin: 10px 0 5px;">{{ evento.titulo }}</p>
+                {% if evento.lugar %}<p style="color: #666; font-size: 0.9rem;">📍 {{ evento.lugar }}</p>{% endif %}
+                {% endwith %}
+                {% else %}
+                <p class="dash-resumen-empty">Sin eventos próximos</p>
+                {% endif %}
+                <button onclick="mostrarPestana('cal')" class="dash-resumen-btn">Ver calendario →</button>
+            </div>
+
+            {# Resumen documentos #}
+            <div class="card-sobria dash-resumen-card">
+                <div class="dash-resumen-header">
+                    <span class="dash-resumen-icon">📸</span>
+                    <h3>Documentos</h3>
+                </div>
+                <p class="dash-resumen-sub">Fotos, recetas e indicaciones médicas</p>
+                <button onclick="mostrarPestana('fotos')" class="dash-resumen-btn">Ver documentos →</button>
+            </div>
+
+            {# Resumen mediciones #}
+            <div class="card-sobria dash-resumen-card">
+                <div class="dash-resumen-header">
+                    <span class="dash-resumen-icon">📊</span>
+                    <h3>Mediciones</h3>
+                </div>
+                <p class="dash-resumen-sub">Presión, peso y glucosa</p>
+                <button onclick="mostrarPestana('mediciones')" class="dash-resumen-btn">Ver historial →</button>
+            </div>
+        </div>
     </div>
 
     <!-- SECCIÓN MEDICAMENTOS -->
-    <div id="seccion-meds" class="pestana-content active">
+    <div id="seccion-meds" class="pestana-content">
         <div class="card-sobria card-meds-header">
             <div class="meds-title-bar">
                 <h3>Plan de Medicación Activo</h3>
-                {# Solo el tutor puede agregar medicamentos #}
                 {% if usuario_es_tutor %}
                 <a href="{% url 'nuevo_medicamento' %}" class="btn-add-med">+ Cargar Nuevo</a>
                 {% endif %}
             </div>
-
             {% if remedios %}
             <div class="tabla-meds-container">
                 <table class="tabla-meds">
@@ -122,7 +184,7 @@
                                     {% if med.horario_fijo %}
                                         <small>🕐 {{ med.horario_fijo }}</small>
                                     {% else %}
-                                        <small style="color:#999;">Sin horario cargado</small>
+                                        <small class="text-muted">Sin horario cargado</small>
                                     {% endif %}
                                 {% elif med.frecuencia_tipo == 'intervalo' %}
                                     <small>🔁 Cada {{ med.cada_cuantas_horas }} hs</small>
@@ -148,7 +210,7 @@
                             <td class="cell-acciones">
                                 <div class="acciones-meds">
                                     {% if usuario_es_tutor %}
-                                        {# TUTOR: puede reponer y eliminar #}
+                                        <a href="{% url 'editar_medicamento' med.id %}" class="btn-editar-med" title="Editar">✏️</a>
                                         <form method="POST" action="{% url 'reponer_medicamento' med.id %}" class="form-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn-mini btn-info" title="Reponer stock">🔄</button>
@@ -158,11 +220,14 @@
                                             <button type="submit" class="btn-mini btn-danger" title="Eliminar">🗑️</button>
                                         </form>
                                     {% else %}
-                                        {# PACIENTE: solo puede registrar su toma #}
+                                        {% if med.stock_actual > 0 %}
                                         <form method="POST" action="{% url 'registrar_toma' med.id %}" class="form-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn-mini btn-success" title="Registrar toma">✅ Tomé</button>
                                         </form>
+                                        {% else %}
+                                        <button class="btn-toma-agotado" disabled>Sin stock</button>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </td>
@@ -186,7 +251,6 @@
                 <h3>Próximos Eventos</h3>
                 <a href="{% url 'calendario' %}" class="btn-mini-text">Ir al calendario completo →</a>
             </div>
-
             {% if eventos_proximos %}
             <div class="lista-eventos">
                 {% for evento in eventos_proximos|slice:":4" %}
@@ -208,9 +272,9 @@
                 {% endfor %}
             </div>
             {% if eventos_proximos|length > 4 %}
-            <p style="text-align:center; margin-top: 15px; color: #999; font-size: 0.9rem;">
+            <p class="dash-ver-mas">
                 y {{ eventos_proximos|length|add:"-4" }} evento{{ eventos_proximos|length|add:"-4"|pluralize }} más —
-                <a href="{% url 'calendario' %}" style="color: var(--azul-profundo);">ver todos</a>
+                <a href="{% url 'calendario' %}">ver todos</a>
             </p>
             {% endif %}
             {% else %}
@@ -221,22 +285,42 @@
         </div>
     </div>
 
+    <!-- SECCIÓN DOCUMENTOS/FOTOS -->
+    <div id="seccion-fotos" class="pestana-content">
+        <div class="card-sobria">
+            <div class="eventos-title-bar">
+                <h3>📸 Documentos Médicos</h3>
+                <a href="{% url 'fotos_mediciones' %}" class="btn-mini-text">Ver todos →</a>
+            </div>
+            <p style="color: #666; margin: 20px 0;">Fotos de mediciones, recetas e indicaciones médicas del paciente.</p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px;">
+                    📋 Ver Documentos Pendientes
+                </a>
+                <a href="{% url 'subir_foto' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px; background: #2ecc71;">
+                    📤 Subir Documento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN MEDICIONES -->
+    <div id="seccion-mediciones" class="pestana-content">
+        <div class="card-sobria">
+            <div class="eventos-title-bar">
+                <h3>📊 Historial de Mediciones</h3>
+                <a href="{% url 'mediciones' %}" class="btn-mini-text">Ver historial completo →</a>
+            </div>
+            <p style="color: #666; margin: 20px 0;">Presión arterial, peso y glucosa del paciente.</p>
+            <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px; display: inline-block;">
+                📊 Ver Mediciones
+            </a>
+        </div>
+    </div>
+
 </main>
 {% endblock %}
 
 {% block scripts %}
 <script src="{% static 'core/js/main.js' %}"></script>
-<script>
-    function mostrarPestana(nombre) {
-        document.querySelectorAll('.pestana-content').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('#btn-tab-cal, #btn-tab-meds').forEach(b => b.classList.remove('active'));
-        document.getElementById('seccion-' + nombre).classList.add('active');
-        document.getElementById('btn-tab-' + nombre).classList.add('active');
-        sessionStorage.setItem('dashboard_tab', nombre);
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (sessionStorage.getItem('dashboard_tab') === 'cal') mostrarPestana('cal');
-    });
-</script>
 {% endblock %}

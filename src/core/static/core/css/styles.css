@@ -122,8 +122,8 @@ body {
 
 .grid-shortcuts {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
     margin-bottom: 30px;
 }
 
@@ -454,13 +454,6 @@ body {
     margin-top: 4px;
 }
 
-.btn-evento-delete {
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 1.3rem;
-    transition: transform 0.2s;
-}
 
 .btn-evento-delete:hover {
     transform: scale(1.2);
@@ -507,7 +500,7 @@ body {
     color: #333;
 }
 
-.form-control, .login-input {
+.form-control {
     width: 100%;
     padding: 14px 15px;
     border: 1.5px solid var(--gris-borde);
@@ -516,7 +509,7 @@ body {
     transition: all 0.3s;
 }
 
-.form-control:focus, .login-input:focus {
+.form-control:focus:focus {
     outline: none;
     border-color: var(--azul-profundo);
     box-shadow: 0 0 0 4px rgba(0, 75, 128, 0.15);
@@ -1108,4 +1101,159 @@ select:focus {
 .main-header .btn-salir:hover {
     background: white !important;
     color: var(--azul-profundo) !important;
+}
+
+/* ============================================================
+   EDITAR MEDICAMENTO
+   ============================================================ */
+
+.btn-editar-med {
+    background: none;
+    border: 2px solid var(--azul-profundo);
+    color: var(--azul-profundo);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-editar-med:hover {
+    background: var(--azul-profundo);
+    color: white;
+}
+
+/* ============================================================
+   STOCK BAJO / AGOTADO
+   ============================================================ */
+
+.btn-toma-agotado {
+    background: #e2e8f0;
+    color: #94a3b8;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: not-allowed;
+    width: 100%;
+}
+
+/* ============================================================
+   AUTH FOOTER (login / registro)
+   ============================================================ */
+
+.auth-footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #666;
+    font-size: 0.95rem;
+    padding-top: 25px;
+    border-top: 1px solid var(--gris-borde);
+}
+
+
+/* ============================================================
+   DASHBOARD — SECCIÓN INICIO
+   ============================================================ */
+
+.dash-grid-inicio {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+}
+
+.dash-resumen-card {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dash-resumen-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.dash-resumen-header h3 {
+    margin: 0;
+    color: var(--azul-profundo);
+    font-size: 1.2rem;
+}
+
+.dash-resumen-icon {
+    font-size: 2rem;
+}
+
+.dash-resumen-num {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--azul-profundo);
+    margin: 0;
+    line-height: 1;
+}
+
+.dash-resumen-sub {
+    color: #666;
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.dash-resumen-empty {
+    color: #999;
+    font-style: italic;
+    font-size: 0.95rem;
+    margin: 10px 0;
+}
+
+.dash-resumen-alerta {
+    background: #fff3cd;
+    color: #856404;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.dash-resumen-btn {
+    margin-top: auto;
+    padding-top: 15px;
+    background: none;
+    border: none;
+    color: var(--azul-profundo);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+    padding-left: 0;
+    transition: opacity 0.2s;
+}
+
+.dash-resumen-btn:hover {
+    opacity: 0.7;
+}
+
+.dash-ver-mas {
+    text-align: center;
+    margin-top: 15px;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.dash-ver-mas a {
+    color: var(--azul-profundo);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.text-muted {
+    color: #999;
+}
+
+@media (max-width: 768px) {
+    .grid-shortcuts { grid-template-columns: repeat(3, 1fr); }
+    .dash-grid-inicio { grid-template-columns: 1fr; }
 }

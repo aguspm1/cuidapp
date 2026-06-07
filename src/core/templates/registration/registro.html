@@ -77,22 +77,22 @@
             <div class="form-group">
                 <label>¿Cuál es tu rol?</label>
                 <div class="rol-selector">
-                    {% for radio in form.rol %}
                     <label class="rol-card">
-                        {{ radio.tag }}
+                        <input type="radio" name="rol" value="paciente" required>
                         <div class="rol-card-content">
-                            {% if radio.choice_value == 'paciente' %}
                             <span class="rol-icon">🧑‍⚕️</span>
                             <span class="rol-nombre">Paciente</span>
                             <span class="rol-desc">Usás la app móvil</span>
-                            {% else %}
+                        </div>
+                    </label>
+                    <label class="rol-card">
+                        <input type="radio" name="rol" value="tutor" required>
+                        <div class="rol-card-content">
                             <span class="rol-icon">👨‍💼</span>
                             <span class="rol-nombre">Tutor</span>
                             <span class="rol-desc">Gestionás desde el panel web</span>
-                            {% endif %}
                         </div>
                     </label>
-                    {% endfor %}
                 </div>
             </div>
 
