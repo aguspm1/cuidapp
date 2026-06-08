@@ -5,53 +5,58 @@
 <main class="main-content auth-container">
     <div class="card-sobria auth-card">
 
-        <a href="{% url 'fotos_mediciones' %}" style="text-decoration:none; color:var(--azul-profundo); font-weight:bold; display:block; margin-bottom:25px;">
-            ← Volver a Documentos
-        </a>
+        <a href="{% url 'fotos_mediciones' %}" class="back-link">← Volver a Documentos</a>
 
         <h2 class="card-title">📝 Cargar Datos de Medición</h2>
 
         {# Imagen o PDF adjunto #}
-        <div style="background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:30px;">
+        <div class="form-section-card">
             {% if foto.imagen %}
                 {% if ".pdf" in foto.imagen.url|lower %}
-                <div style="padding:25px; border:2px dashed var(--azul-profundo); border-radius:8px; background:white; text-align:center;">
-                    <p style="font-size:2rem; margin:0;">📄</p>
-                    <p style="margin:10px 0 0; font-weight:bold; color:var(--azul-profundo);">Documento PDF</p>
-                    <a href="{{ foto.imagen.url }}" target="_self" class="btn-primary" style="display:inline-block; width:auto; padding:10px 20px; text-decoration:none; margin-top:15px;">
+                <div class="pdf-preview-box">
+                    <p class="pdf-icon">📄</p>
+                    <p class="pdf-title">Documento PDF</p>
+                    <a href="{{ foto.imagen.url }}" target="_self" class="btn-primary btn-auto">
                         👁️ Abrir PDF
                     </a>
                 </div>
                 {% else %}
                 <a href="{{ foto.imagen.url }}" target="_self">
-                    <img src="{{ foto.imagen.url }}" style="width:100%; max-height:350px; object-fit:contain; border-radius:8px; cursor:zoom-in;">
+                    <img src="{{ foto.imagen.url }}" class="img-preview-zoom">
                 </a>
                 {% endif %}
             {% endif %}
+            
             {% if foto.nota_paciente %}
-            <p style="margin-top:15px; color:#333; background:#e8f5e9; padding:12px 15px; border-left:4px solid #2e7d32; border-radius:6px;">
+            <p class="nota-paciente-box">
                 <strong>Nota del paciente:</strong> "{{ foto.nota_paciente }}"
             </p>
             {% endif %}
-            <p style="margin-top:10px; color:#999; font-size:0.9rem;">Subida: {{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
+            <p class="text-muted small">Subida: {{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
         </div>
 
         <form method="POST">
             {% csrf_token %}
 
             <div class="form-group">
-                <label for="tipo">Tipo de Medición</label>
-                <select name="tipo" id="tipo" required style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:1rem; cursor:pointer;">
-                    <option value="">-- Seleccionar tipo --</option>
-                    <option value="presion">🩸 Presión Arterial</option>
-                    <option value="peso">⚖️ Peso</option>
-                    <option value="glucosa">🩹 Glucosa</option>
+                 <label>Tipo de Medición</label>
+                <select name="tipo" id="tipo" class="form-control" required>
+                    <option value="">Seleccionar tipo...</option>
+                    {% if perfil.requiere_control_presion %}
+                        <option value="presion">Presión Arterial</option>
+                    {% endif %}
+                    {% if perfil.requiere_control_glucosa %}
+                        <option value="glucosa">Glucosa</option>
+                    {% endif %}
+                    {% if perfil.requiere_control_peso %}
+                        <option value="peso">Peso</option>
+                    {% endif %}
                 </select>
             </div>
 
             {# Presión — dos campos separados #}
             <div id="presion-fields" style="display:none;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div class="form-row-2">
                     <div class="form-group">
                         <label>Sistólica (mmHg)</label>
                         <input type="number" name="sistolica" step="1" min="0" class="form-control" placeholder="Ej: 120">
@@ -81,21 +86,11 @@
                     placeholder="Ej: Tomó medicamento antes de medir..."></textarea>
             </div>
 
-            <div style="display:flex; gap:15px; margin-top:25px;">
-                <button type="submit" class="btn-primary" style="flex:1;">Guardar Datos ✓</button>
-                <a href="{% url 'fotos_mediciones' %}" class="btn-salir" style="flex:0.6; text-decoration:none; display:flex; align-items:center; justify-content:center; padding:16px;">Cancelar</a>
+            <div class="form-actions-container">
+                <button type="submit" class="btn-primary">Guardar Datos ✓</button>
+                <a href="{% url 'fotos_mediciones' %}" class="btn-cancelar">Cancelar</a>
             </div>
         </form>
     </div>
 </main>
-
-{% block scripts %}
-<script>
-document.getElementById('tipo').addEventListener('change', function() {
-    document.getElementById('presion-fields').style.display = this.value === 'presion' ? 'grid' : 'none';
-    document.getElementById('peso-fields').style.display    = this.value === 'peso'    ? 'block' : 'none';
-    document.getElementById('glucosa-fields').style.display = this.value === 'glucosa' ? 'block' : 'none';
-});
-</script>
-{% endblock %}
 {% endblock %}

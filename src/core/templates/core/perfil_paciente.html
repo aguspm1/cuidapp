@@ -3,169 +3,129 @@
 
 {% block content %}
 <main class="main-content">
-    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 30px;">
-        ← Volver al Dashboard
-    </a>
+    <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
 
     <div style="max-width: 1000px; margin: 0 auto;">
         
         {# Encabezado del paciente #}
-        <div class="card-sobria" style="display: flex; align-items: center; gap: 30px; padding: 40px; margin-bottom: 30px;">
-            <div style="width: 120px; height: 120px; background: var(--azul-profundo); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; flex-shrink: 0;">
+        <div class="card-sobria profile-header-card">
+            <div class="profile-avatar-large">
                 {{ paciente.first_name|slice:":1"|upper }}
             </div>
-            <div>
+            <div class="profile-header-info">
                 <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">{{ paciente.first_name }} {{ paciente.last_name }}</h2>
                 <p style="margin: 5px 0; color: #666; font-size: 1.1rem;">{{ paciente.username }}</p>
-                <span style="background: #e8f5e9; color: #2e7d32; padding: 8px 15px; border-radius: 20px; font-size: 0.95rem; font-weight: 600; display: inline-block; margin-top: 10px;">
-                    Paciente
-                </span>
+                <span class="badge-paciente">Paciente</span>
             </div>
+            {% if usuario_es_tutor %}
+            <div>
+                <a href="{% url 'editar_perfil' paciente.id %}" class="btn-editar-perfil">
+                    ✏️ Editar Perfil
+                </a>
+            </div>
+            {% endif %}
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            
+        <div class="profile-grid-2">
             {# Datos Personales #}
-            <div class="card-sobria" style="padding: 30px;">
-                <h3 style="color: var(--azul-profundo); margin-bottom: 20px; font-size: 1.3rem;">📋 Datos Personales</h3>
+            <div class="card-sobria profile-section-card">
+                <h3 class="form-section-title">📋 Datos Personales</h3>
                 
                 {% if perfil.fecha_nacimiento %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Fecha de Nacimiento:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.fecha_nacimiento|date:"d/m/Y" }}</p>
+                <div class="form-group">
+                    <label class="data-label">Fecha de Nacimiento:</label>
+                    <p class="data-value">{{ perfil.fecha_nacimiento|date:"d/m/Y" }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.grupo_sanguineo %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Grupo Sanguíneo:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.grupo_sanguineo }}</p>
+                <div class="form-group">
+                    <label class="data-label">Grupo Sanguíneo:</label>
+                    <p class="data-value">{{ perfil.grupo_sanguineo }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.alergias %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">⚠️ Alergias:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #c7255c; font-weight: 600;">{{ perfil.alergias }}</p>
+                <div class="form-group">
+                    <label class="data-label">⚠️ Alergias:</label>
+                    <p class="data-alert">{{ perfil.alergias }}</p>
                 </div>
                 {% endif %}
             </div>
 
             {# Datos de Emergencia #}
-            <div class="card-sobria" style="padding: 30px;">
-                <h3 style="color: var(--azul-profundo); margin-bottom: 20px; font-size: 1.3rem;">🚨 Emergencia</h3>
+            <div class="card-sobria profile-section-card">
+                <h3 class="form-section-title">🚨 Emergencia</h3>
                 
                 {% if perfil.contacto_emergencia %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Contacto:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.contacto_emergencia }}</p>
+                <div class="form-group">
+                    <label class="data-label">Contacto:</label>
+                    <p class="data-value">{{ perfil.contacto_emergencia }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.telefono_emergencia %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Teléfono:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.telefono_emergencia }}</p>
+                <div class="form-group">
+                    <label class="data-label">Teléfono:</label>
+                    <p class="data-value">{{ perfil.telefono_emergencia }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.medico_cabecera %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Médico de Cabecera:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.medico_cabecera }}</p>
+                <div class="form-group">
+                    <label class="data-label">Médico de Cabecera:</label>
+                    <p class="data-value">{{ perfil.medico_cabecera }}</p>
                 </div>
                 {% endif %}
             </div>
-
         </div>
 
         {# Obra Social #}
-        <div class="card-sobria" style="padding: 30px; margin-top: 30px;">
-            <h3 style="color: var(--azul-profundo); margin-bottom: 20px; font-size: 1.3rem;">🏥 Obra Social</h3>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div class="card-sobria profile-section-card">
+            <h3 class="form-section-title">🏥 Obra Social</h3>
+            <div class="profile-grid-3">
                 {% if perfil.obra_social %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Obra Social:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.obra_social }}</p>
+                <div>
+                    <label class="data-label">Obra Social:</label>
+                    <p class="data-value">{{ perfil.obra_social }}</p>
                 </div>
                 {% endif %}
-
                 {% if perfil.plan %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Plan:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.plan }}</p>
+                <div>
+                    <label class="data-label">Plan:</label>
+                    <p class="data-value">{{ perfil.plan }}</p>
                 </div>
                 {% endif %}
-
                 {% if perfil.numero_afiliado %}
-                <div style="margin-bottom: 15px;">
-                    <label style="color: #666; font-size: 0.9rem; font-weight: 600;">Número de Afiliado:</label>
-                    <p style="font-size: 1rem; margin: 5px 0; color: #333;">{{ perfil.numero_afiliado }}</p>
+                <div>
+                    <label class="data-label">Número de Afiliado:</label>
+                    <p class="data-value">{{ perfil.numero_afiliado }}</p>
                 </div>
                 {% endif %}
             </div>
         </div>
 
         {# Controles Requeridos #}
-        <div class="card-sobria" style="padding: 30px; margin-top: 30px;">
-            <h3 style="color: var(--azul-profundo); margin-bottom: 20px; font-size: 1.3rem;">📊 Controles Requeridos</h3>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div class="card-sobria profile-section-card">
+            <h3 class="form-section-title">📊 Controles Requeridos</h3>
+            <div class="profile-grid-3">
                 <div class="control-card {% if perfil.requiere_control_presion %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Presión Arterial</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">
-                        {% if perfil.requiere_control_presion %}✓ Sí{% else %}✗ No{% endif %}
-                    </p>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Presión Arterial</p>
+                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_presion %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
 
                 <div class="control-card {% if perfil.requiere_control_glucosa %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Glucosa</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">
-                        {% if perfil.requiere_control_glucosa %}✓ Sí{% else %}✗ No{% endif %}
-                    </p>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Glucosa</p>
+                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_glucosa %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
 
                 <div class="control-card {% if perfil.requiere_control_peso %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">Peso</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">
-                        {% if perfil.requiere_control_peso %}✓ Sí{% else %}✗ No{% endif %}
-                    </p>
+                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Peso</p>
+                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_peso %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
             </div>
         </div>
 
-        {# Acciones #}
-        <div style="display: flex; gap: 15px; margin-top: 30px;">
-            <a href="{% url 'mediciones' %}" class="btn-primary" style="flex: 1; text-decoration: none; text-align: center; padding: 16px; font-size: 1.05rem;">
-                📊 Ver Mediciones
-            </a>
-            <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="flex: 1; text-decoration: none; text-align: center; padding: 16px; background: var(--celeste-neon); font-size: 1.05rem;">
-                📸 Ver Fotos
-            </a>
-            <a href="/editar-perfil/{{ perfil.id }}/" class="btn-primary" style="flex: 1; text-decoration: none; text-align: center; padding: 16px; background: #ffc107; color: #333; font-size: 1.05rem; font-weight: 600;">
-                ✏️ Editar Perfil
-            </a>
-        </div>
     </div>
 </main>
-
-<style>
-.control-card {
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.control-si {
-    background: #fee2e2;
-    color: #c7255c;
-}
-
-.control-no {
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-</style>
-
 {% endblock %}

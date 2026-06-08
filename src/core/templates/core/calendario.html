@@ -1,84 +1,92 @@
 {% extends 'core/base.html' %}
 {% load static %}
- 
+
 {% block content %}
 <main class="main-content">
     <div class="card-sobria" style="border-top: 6px solid var(--azul-profundo); padding: 40px;">
- 
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <div>
                 <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ nombre_paciente }}</h2>
                 <p style="margin: 8px 0 0; color: #666; font-size: 1.05rem;">Gestioná turnos médicos y eventos familiares</p>
             </div>
-            <div style="display: flex; gap: 15px;">
-                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 14px 25px; text-decoration: none; font-size: 1rem; width: auto;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                {% if usuario_es_tutor %}
+                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 12px 22px; text-decoration: none; font-size: 0.95rem; width: auto; border-radius: 8px;">
                     + Agregar Evento
                 </a>
-                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration: none; padding: 14px 25px; display: flex; align-items: center; gap: 8px;">
-                    ⬅ Volver
+                {% endif %}
+                <a href="{% url 'dashboard' %}" style="text-decoration:none; color:var(--azul-profundo); font-weight:bold; font-size:1.1rem; display:block; margin-bottom:30px;">
+                     ← Volver al Dashboard
                 </a>
             </div>
         </div>
- 
+
         <div id="calendar-full" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--gris-borde); min-height: 700px;"></div>
     </div>
 </main>
- 
-{# Modal para ver y eliminar un evento — usa tus clases CSS existentes #}
+
+{# Modal para ver, editar y eliminar un evento #}
 <div id="modal-evento" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
-    <div class="card-sobria" style="padding: 35px; max-width: 420px; width: 90%;">
+    <div class="card-sobria" style="padding: 35px; max-width: 460px; width: 90%;">
         <h3 id="modal-titulo" style="margin: 0 0 15px; color: var(--azul-profundo); font-size: 1.3rem;"></h3>
         <p id="modal-lugar" style="color: #666; margin: 0 0 8px; font-size: 1rem;"></p>
         <p id="modal-fecha" style="color: #999; margin: 0 0 25px; font-size: 0.95rem;"></p>
- 
-        <div style="display: flex; gap: 12px;">
+
+        {% if usuario_es_tutor %}
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+            <a id="btn-editar-evento" href="#" class="btn-primary" style="flex: 1; text-decoration: none; text-align: center; padding: 12px; font-size: 0.95rem; background: #f39c12;">
+                ✏️ Editar
+            </a>
             <form id="form-eliminar" method="POST" style="flex: 1;">
                 {% csrf_token %}
-                <button type="submit" class="btn-reject" style="width: 100%; padding: 14px; font-size: 1rem;">
+                <button type="submit" class="btn-reject" style="width: 100%; padding: 12px; font-size: 0.95rem;">
                     🗑 Eliminar
                 </button>
             </form>
-            <button onclick="cerrarModal()" style="flex: 1; padding: 14px; font-size: 1rem; background: transparent; color: var(--azul-profundo); border: 2px solid var(--azul-profundo); border-radius: 8px; font-weight: 700; cursor: pointer;">
-                Cerrar
-            </button>
         </div>
+        {% endif %}
+        <button onclick="cerrarModal()" style="width: 100%; padding: 12px; font-size: 0.95rem; background: transparent; color: var(--azul-profundo); border: 2px solid var(--azul-profundo); border-radius: 8px; font-weight: 700; cursor: pointer;">
+            Cerrar
+        </button>
     </div>
 </div>
- 
-<script id="todos-eventos-json" type="application/json">
-    [
-        {% for e in todos_eventos %}
-        {
-            "id": {{ e.id }},
-            "title": "{{ e.titulo|escapejs }}",
-            "start": "{{ e.fecha_hora|date:'Y-m-d\TH:i:s' }}",
-            "color": "{% if e.tipo == 'medico' %}var(--evento-medico){% elif e.tipo == 'social' %}#38a169{% elif e.tipo == 'actividad' %}#d97706{% else %}var(--azul-profundo){% endif %}",
-            "extendedProps": {
-                "lugar": "{{ e.lugar|escapejs }}",
-                "tipo":  "{{ e.tipo }}"
-            }
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ]
-</script>
 {% endblock %}
- 
+
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script>
     function cerrarModal() {
         document.getElementById('modal-evento').style.display = 'none';
     }
- 
+
     // Cerrar modal al hacer click fuera
     document.getElementById('modal-evento').addEventListener('click', function(e) {
         if (e.target === this) cerrarModal();
     });
- 
+
     document.addEventListener('DOMContentLoaded', function() {
         const calendarEl = document.getElementById('calendar-full');
-        const eventos = JSON.parse(document.getElementById('todos-eventos-json').textContent);
- 
+
+        // Lee los eventos directamente del contexto Django (eventos_json es un string JSON)
+        const eventosRaw = {{ eventos_json|safe }};
+
+        // Mapea colores y extendedProps que la view no incluye
+        const eventos = eventosRaw.map(function(ev) {
+            const colores = { medico: '#2b6cb0', social: '#38a169', actividad: '#d97706' };
+            return {
+                id:    ev.id,
+                title: ev.title,
+                start: ev.start,
+                color: colores[ev.tipo] || '#2b6cb0',
+                className: ev.className,
+                extendedProps: {
+                    lugar: ev.lugar || '',
+                    tipo:  ev.tipo  || ''
+                }
+            };
+        });
+
         const calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'es',
@@ -89,9 +97,9 @@
             },
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana' },
             events: eventos,
- 
+
             eventClick: function(info) {
-                const props   = info.event.extendedProps;
+                const props    = info.event.extendedProps;
                 const fechaStr = info.event.start
                     ? info.event.start.toLocaleDateString('es-AR', {
                         weekday: 'long', year: 'numeric',
@@ -99,16 +107,21 @@
                         hour: '2-digit', minute: '2-digit'
                       })
                     : '';
- 
+
                 document.getElementById('modal-titulo').textContent = info.event.title;
                 document.getElementById('modal-lugar').textContent  = props.lugar ? '📍 ' + props.lugar : '';
                 document.getElementById('modal-fecha').textContent  = '🕐 ' + fechaStr;
-                document.getElementById('form-eliminar').action     = '/calendario/eliminar/' + info.event.id + '/';
- 
+
+                const formEliminar = document.getElementById('form-eliminar');
+                if (formEliminar) formEliminar.action = '/calendario/eliminar/' + info.event.id + '/';
+
+                const btnEditar = document.getElementById('btn-editar-evento');
+                if (btnEditar) btnEditar.href = '/calendario/editar/' + info.event.id + '/';
+
                 document.getElementById('modal-evento').style.display = 'flex';
             }
         });
- 
+
         calendar.render();
     });
 </script>

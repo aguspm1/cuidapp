@@ -11,21 +11,72 @@
 
     <header class="main-header">
         <div class="header-container">
-            <div class="logo-container">
-                <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
-                <h1 class="logo-texto">Cuida APP</h1>
-            </div>
+            <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; text-decoration: none;">
+        <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
+        <h1 class="logo-texto">Cuida APP</h1>
+    </a>
 
             <nav class="nav-principal">
-                <a href="{% url 'dashboard' %}">Inicio</a>
-
+      
                 {% if user.is_authenticated %}
                     {# usuario_es_tutor viene del context processor — disponible en todos los templates #}
                     {% if usuario_es_tutor %}
-                        <a href="{% url 'perfil_tutor' %}">Mi Perfil</a>
+                        <a href="{% url 'perfil_tutor' %}">👤 Mi Perfil</a>
                     {% else %}
-                        <a href="{% url 'perfil_paciente' %}">Mi Perfil</a>
+                        <a href="{% url 'perfil_paciente' %}">👤 Mi Perfil</a>
                     {% endif %}
+
+                    <!-- CAMPANITA DE NOTIFICACIONES -->
+                    <div class="notif-bell-wrapper" id="notif-bell-wrapper">
+                        <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifPanel()" title="Notificaciones">
+    🔔Notificaciones
+    {% if notif_count and notif_count > 0 %}
+        <span class="notif-badge" id="notif-badge">{{ notif_count }}</span>
+    {% endif %}
+</button>
+                        <div class="notif-panel" id="notif-panel">
+                            <div class="notif-panel-header">
+                                <strong>Notificaciones</strong>
+                            </div>
+                            <div class="notif-panel-body">
+                                {% if tomas_notif %}
+                                <div class="notif-section-title">💊 Tomas recientes (últimas 24 hs)</div>
+                                {% for toma in tomas_notif %}
+                                <div class="notif-item notif-toma {% if forloop.counter <= tomas_nuevas_count %}notif-toma-nueva{% endif %}">
+                                    <span class="notif-item-icon">✅</span>
+                                    <div class="notif-item-text">
+                                        <strong>{{ toma.paciente.first_name }} tomó {{ toma.medicamento.nombre }}</strong>
+                                        <small>{{ toma.fecha_hora|date:"d/m H:i" }} hs — {{ toma.cantidad_tomada }} {{ toma.medicamento.unidad_medida }}</small>
+                                    </div>
+                                    {% if forloop.counter <= tomas_nuevas_count %}<span class="notif-nueva-dot"></span>{% endif %}
+                                </div>
+                                {% endfor %}
+                                {% endif %}
+
+                                {% if stock_notif %}
+                                <div class="notif-section-title">⚠️ Stock bajo</div>
+                                {% for med in stock_notif %}
+                                <div class="notif-item notif-warning">
+                                    <span class="notif-item-icon">⚠️</span>
+                                    <div class="notif-item-text">
+                                        <strong>{{ med.nombre }}</strong>
+                                        <small>Quedan {{ med.tomas_restantes }} toma{{ med.tomas_restantes|pluralize }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
+
+                                {% if not tomas_notif and not stock_notif %}
+                                <div class="notif-empty">
+                                    <span>✅</span>
+                                    <small>Sin notificaciones</small>
+                                </div>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+
                     <form action="{% url 'logout' %}" method="post" class="form-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn-salir">Cerrar Sesión</button>
@@ -42,7 +93,6 @@
         {% for message in messages %}
         <div class="mensaje-alerta {{ message.tags }}">
             {{ message }}
-            <button class="mensaje-cerrar" onclick="this.parentElement.remove()">✕</button>
         </div>
         {% endfor %}
     </div>
@@ -60,12 +110,50 @@
 
     <script>
     setTimeout(function() {
-        document.querySelectorAll('.mensaje-alerta').forEach(function(el) {
+        document.querySelectorAll('.mensaje-alerta:not(.warning):not(.error)').forEach(function(el) {
             el.style.transition = 'opacity 0.5s';
             el.style.opacity = '0';
             setTimeout(function() { el.remove(); }, 500);
         });
     }, 4000);
+    // warnings y errores duran más
+    setTimeout(function() {
+        document.querySelectorAll('.mensaje-alerta.warning, .mensaje-alerta.error').forEach(function(el) {
+            el.style.transition = 'opacity 0.5s';
+            el.style.opacity = '0';
+            setTimeout(function() { el.remove(); }, 500);
+        });
+    }, 9000);
+
+    function toggleNotifPanel() {
+        var panel = document.getElementById('notif-panel');
+        if (!panel) return;
+        var abriendo = !panel.classList.contains('show');
+        panel.classList.toggle('show');
+        // Al abrir: marcar como leídas
+        if (abriendo) {
+            fetch('{% url "marcar_notif_leidas" %}', {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+            }).then(function() {
+                // Limpiar badge
+                var badge = document.getElementById('notif-badge');
+                if (badge) badge.remove();
+                // Quitar highlight de tomas nuevas
+                document.querySelectorAll('.notif-toma-nueva').forEach(function(el) {
+                    el.classList.remove('notif-toma-nueva');
+                });
+            });
+        }
+    }
+    // Cerrar panel al clickear afuera
+    document.addEventListener('click', function(e) {
+        var wrapper = document.getElementById('notif-bell-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            var panel = document.getElementById('notif-panel');
+            if (panel) panel.classList.remove('show');
+        }
+    });
     </script>
 
 </body>

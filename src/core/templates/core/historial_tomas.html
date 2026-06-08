@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content">
+    <div class="card-sobria">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+            <a href="{% url 'dashboard' %}" class="btn-mini-text" style="font-size: 0.85rem; padding: 8px 14px;">← Volver</a>
+            <h2 style="margin: 0;">
+                📋 Historial de Tomas
+                {% if medicamento_nombre %}
+                    — <span style="color: var(--azul-profundo);">{{ medicamento_nombre }}</span>
+                {% endif %}
+            </h2>
+        </div>
+
+        {% if medicamento_nombre %}
+        <div style="background: #f0faff; border: 1px solid var(--celeste-neon); border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 0.9rem; color: #0369a1;">
+            Mostrando tomas del medicamento: <strong>{{ medicamento_nombre }}</strong>
+            &nbsp;·&nbsp; <a href="{% url 'historial_tomas' %}" style="color: var(--azul-profundo);">Ver historial completo</a>
+        </div>
+        {% endif %}
+
+        {% if tomas %}
+        <div class="tabla-meds-container">
+            <table class="tabla-meds">
+                <thead>
+                    <tr>
+                        <th>Paciente</th>
+                        <th>Medicamento</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for toma in tomas %}
+                    <tr>
+                        <td>{{ toma.paciente.first_name }}</td>
+                        <td><strong>{{ toma.medicamento.nombre }}</strong></td>
+                        <td>{{ toma.fecha_hora|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>📭 No hay tomas registradas{% if medicamento_nombre %} para {{ medicamento_nombre }}{% endif %}.</p>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

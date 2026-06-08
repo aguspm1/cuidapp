@@ -4,7 +4,6 @@
 {% block content %}
 <main class="main-content">
 
-    <!-- CABECERA -->
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
@@ -15,27 +14,24 @@
                 <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
-        {% if pacientes_list|length > 1 and usuario_es_tutor %}
-        <div class="dashboard-selector">
-            <select onchange="location.href = this.value">
+
+        {% if usuario_es_tutor and pacientes_list %}
+        <div class="dashboard-selector" style="position: relative;">
+            <button type="button" onclick="document.getElementById('dropdown-pacientes').classList.toggle('show')" class="btn-flecha-sobria">
+                ▼
+            </button>
+            <div id="dropdown-pacientes" class="dropdown-content">
                 {% for pac in pacientes_list %}
-                <option value="{% url 'seleccionar_paciente' pac.id %}" {% if paciente_actual.id == pac.id %}selected{% endif %}>
-                    {{ pac.user.first_name }}
-                </option>
+                <a href="{% url 'seleccionar_paciente' pac.user.id %}"
+                    {% if perfil.user.id == pac.user.id %}class="active"{% endif %}>
+                    {{ pac.user.first_name }} {{ pac.user.last_name }}
+                </a>
                 {% endfor %}
-            </select>
+            </div>
         </div>
         {% endif %}
-        <span class="status-badge">✓ Conectado</span>
     </div>
 
-    <div class="status-row">
-        <div class="status-card-mini"><span class="status-icon">📍</span> Recoleta, CABA</div>
-        <div class="status-card-mini"><span class="status-icon">🔋</span> 89% Batería</div>
-        <div class="status-card-mini"><span class="status-icon">📶</span> Señal Excelente</div>
-    </div>
-
-    <!-- ALERTAS DE STOCK BAJO -->
     {% for med in remedios %}
         {% if med.tiene_stock_bajo %}
         <div class="alerta-stock">
@@ -54,8 +50,7 @@
         {% endif %}
     {% endfor %}
 
-    <!-- PESTAÑAS -->
-    <div class="grid-shortcuts">
+    <div class="grid-shortcuts" id="grid-pestanas">
         <button id="btn-tab-inicio" class="shortcut-btn active" onclick="mostrarPestana('inicio')">
             <span class="shortcut-icon">🏠</span>
             <span>Inicio</span>
@@ -70,20 +65,21 @@
             {% if eventos_proximos %}<span class="tab-badge">{{ eventos_proximos|length }}</span>{% endif %}
         </button>
         <button id="btn-tab-fotos" class="shortcut-btn" onclick="mostrarPestana('fotos')">
-            <span class="shortcut-icon">📸</span>
+            <span class="shortcut-icon">📎</span>
             <span>Documentos</span>
         </button>
+        {% if controles_permitidos %}
         <button id="btn-tab-mediciones" class="shortcut-btn" onclick="mostrarPestana('mediciones')">
             <span class="shortcut-icon">📊</span>
             <span>Mediciones</span>
         </button>
+        {% endif %}
     </div>
 
-    <!-- SECCIÓN INICIO -->
     <div id="seccion-inicio" class="pestana-content active">
         <div class="dash-grid-inicio">
 
-            {# Resumen medicamentos #}
+            {# Card 1: Medicamentos #}
             <div class="card-sobria dash-resumen-card">
                 <div class="dash-resumen-header">
                     <span class="dash-resumen-icon">💊</span>
@@ -93,66 +89,93 @@
                 <p class="dash-resumen-num">{{ remedios|length }}</p>
                 <p class="dash-resumen-sub">medicamento{{ remedios|length|pluralize }} activo{{ remedios|length|pluralize }}</p>
                 {% for med in remedios %}
-                {% if med.tiene_stock_bajo %}
-                <div class="dash-resumen-alerta">⚠️ {{ med.nombre }} con stock bajo</div>
-                {% endif %}
+                    {% if med.tiene_stock_bajo %}
+                    <div class="dash-resumen-alerta" style="color:#d9534f; font-weight:600; font-size:0.9rem; margin-top:5px;">⚠️ {{ med.nombre }} con stock bajo</div>
+                    {% endif %}
                 {% endfor %}
                 {% else %}
-                <p class="dash-resumen-empty">Sin medicamentos cargados</p>
+                <p class="dash-resumen-empty text-muted">Sin medicamentos cargados</p>
                 {% endif %}
                 <button onclick="mostrarPestana('meds')" class="dash-resumen-btn">Ver todos →</button>
             </div>
 
-            {# Resumen próximo evento #}
+            {# Card 2: Eventos Semanales #}
             <div class="card-sobria dash-resumen-card">
                 <div class="dash-resumen-header">
                     <span class="dash-resumen-icon">📅</span>
-                    <h3>Próximo Evento</h3>
+                    <h3>Esta Semana</h3>
                 </div>
-                {% if eventos_proximos %}
-                {% with evento=eventos_proximos.0 %}
-                <p class="dash-resumen-num" style="font-size: 1.8rem;">{{ evento.fecha_hora|date:"d/m" }}</p>
-                <p class="dash-resumen-sub">{{ evento.fecha_hora|date:"H:i" }} hs</p>
-                <p style="font-weight: 700; color: var(--azul-profundo); margin: 10px 0 5px;">{{ evento.titulo }}</p>
-                {% if evento.lugar %}<p style="color: #666; font-size: 0.9rem;">📍 {{ evento.lugar }}</p>{% endif %}
+                {% if eventos_esta_semana %}
+                <p class="dash-resumen-num">{{ eventos_esta_semana|length }}</p>
+                <p class="dash-resumen-sub">evento{{ eventos_esta_semana|length|pluralize }} esta semana</p>
+                {% with evento=eventos_esta_semana.0 %}
+                <div style="margin-top:10px; background:#f8fafc; padding:10px; border-radius:8px; border-left:4px solid var(--celeste-neon);">
+                    <p class="evento-titulo" style="margin:0; font-weight:bold;">{{ evento.titulo }}</p>
+                    <p class="text-muted" style="margin:5px 0 0; font-size:0.9rem;">
+                        {{ evento.fecha_hora|date:"d/m" }} — {{ evento.fecha_hora|date:"H:i" }} hs
+                        {% if evento.lugar %}<br>📍 {{ evento.lugar }}{% endif %}
+                    </p>
+                </div>
                 {% endwith %}
                 {% else %}
-                <p class="dash-resumen-empty">Sin eventos próximos</p>
+                <p class="dash-resumen-empty text-muted">Sin eventos esta semana</p>
                 {% endif %}
                 <button onclick="mostrarPestana('cal')" class="dash-resumen-btn">Ver calendario →</button>
             </div>
 
-            {# Resumen documentos #}
+            {# Card 3: Documentos Pendientes #}
+            {% if usuario_es_tutor or docs_pendientes > 0 %}
             <div class="card-sobria dash-resumen-card">
                 <div class="dash-resumen-header">
-                    <span class="dash-resumen-icon">📸</span>
+                    <span class="dash-resumen-icon">📎</span>
                     <h3>Documentos</h3>
                 </div>
-                <p class="dash-resumen-sub">Fotos, recetas e indicaciones médicas</p>
+                {% if docs_pendientes > 0 %}
+                <p class="dash-resumen-num">{{ docs_pendientes }}</p>
+                <p class="dash-resumen-sub">documento{{ docs_pendientes|pluralize }} para revisar</p>
+                {% else %}
+                <p class="dash-resumen-empty text-muted">Todo al día</p>
+                {% endif %}
                 <button onclick="mostrarPestana('fotos')" class="dash-resumen-btn">Ver documentos →</button>
             </div>
+            {% endif %}
 
-            {# Resumen mediciones #}
+            {# Card 4: Última Medición #}
+            {% if controles_permitidos and ultima_medicion %}
             <div class="card-sobria dash-resumen-card">
                 <div class="dash-resumen-header">
                     <span class="dash-resumen-icon">📊</span>
-                    <h3>Mediciones</h3>
+                    <h3>Última Medición</h3>
                 </div>
-                <p class="dash-resumen-sub">Presión, peso y glucosa</p>
-                <button onclick="mostrarPestana('mediciones')" class="dash-resumen-btn">Ver historial →</button>
+                <p class="dash-resumen-sub">
+                    {{ ultima_medicion.fecha_registro|date:"d/m/Y H:i" }}
+                </p>
+                {% if ultima_medicion.tipo == 'presion' %}
+                <p class="dash-resumen-num">{{ ultima_medicion.valor_1|floatformat:0 }}/{{ ultima_medicion.valor_2|floatformat:0 }}</p>
+                <p class="dash-resumen-sub">mmHg — Presión Arterial</p>
+                {% elif ultima_medicion.tipo == 'peso' %}
+                <p class="dash-resumen-num">{{ ultima_medicion.valor_1|floatformat:1 }}</p>
+                <p class="dash-resumen-sub">kg — Peso</p>
+                {% elif ultima_medicion.tipo == 'glucosa' %}
+                <p class="dash-resumen-num">{{ ultima_medicion.valor_1|floatformat:0 }}</p>
+                <p class="dash-resumen-sub">mg/dL — Glucosa</p>
+                {% endif %}
+                <button onclick="mostrarPestana('mediciones')" class="dash-resumen-btn">Ver evolución →</button>
             </div>
+            {% endif %}
+
         </div>
     </div>
 
-    <!-- SECCIÓN MEDICAMENTOS -->
     <div id="seccion-meds" class="pestana-content">
         <div class="card-sobria card-meds-header">
             <div class="meds-title-bar">
                 <h3>Plan de Medicación Activo</h3>
                 {% if usuario_es_tutor %}
-                <a href="{% url 'nuevo_medicamento' %}" class="btn-add-med">+ Cargar Nuevo</a>
+                <a href="{% url 'nuevo_medicamento' %}" class="btn-mini-text">+ Cargar Nuevo</a>
                 {% endif %}
             </div>
+
             {% if remedios %}
             <div class="tabla-meds-container">
                 <table class="tabla-meds">
@@ -172,27 +195,27 @@
                         <tr class="{% if med.tiene_stock_bajo %}row-stock-bajo{% endif %}">
                             <td class="cell-nombre">
                                 <strong>{{ med.nombre }}</strong>
-                                {% if med.tiene_stock_bajo %}<span class="badge-alerta">⚠️ Stock bajo</span>{% endif %}
+                                {% if med.tiene_stock_bajo %}<br><span style="font-size:0.8rem; color:#d9534f; font-weight:bold;">⚠️ Stock bajo</span>{% endif %}
                             </td>
                             <td class="cell-presentacion">
                                 {{ med.get_tipo_presentacion_display }}<br>
-                                <small>{{ med.unidad_medida }}</small>
+                                <small class="text-muted">{{ med.unidad_medida }}</small>
                             </td>
                             <td class="cell-dosis">{{ med.dosis_por_toma }} {{ med.unidad_medida }}</td>
                             <td class="cell-frecuencia">
                                 {% if med.frecuencia_tipo == 'fijo' %}
                                     {% if med.horario_fijo %}
-                                        <small>🕐 {{ med.horario_fijo }}</small>
+                                        <small class="text-muted">🕐 {{ med.horario_fijo }}</small>
                                     {% else %}
                                         <small class="text-muted">Sin horario cargado</small>
                                     {% endif %}
                                 {% elif med.frecuencia_tipo == 'intervalo' %}
-                                    <small>🔁 Cada {{ med.cada_cuantas_horas }} hs</small>
+                                    <small class="text-muted">🔁 Cada {{ med.cada_cuantas_horas }} hs</small>
                                 {% else %}
-                                    <small>📌 {{ med.evento_toma }}</small>
+                                    <small class="text-muted">📌 {{ med.evento_toma }}</small>
                                 {% endif %}
                                 {% if med.duracion_tipo == 'temporal' %}
-                                    <br><small class="small-rojo">Hasta: {{ med.fecha_fin|date:"d/m/Y" }}</small>
+                                    <br><small style="color:#d9534f;">Hasta: {{ med.fecha_fin|date:"d/m/Y" }}</small>
                                 {% endif %}
                             </td>
                             <td class="cell-stock">
@@ -200,33 +223,34 @@
                                     <div class="progress-bg">
                                         <div class="progress-fill" style="width: {{ med.porcentaje_stock }}%;"></div>
                                     </div>
-                                    <span class="stock-number">{{ med.stock_actual }}</span>
+                                    <span class="stock-number" style="font-weight:bold;">{{ med.stock_actual }}</span>
                                 </div>
                             </td>
                             <td class="cell-tomas">
-                                <strong class="tomas-count">{{ med.tomas_restantes }}</strong>
-                                <small>tomas</small>
+                                <strong style="font-size:1.1rem;">{{ med.tomas_restantes }}</strong>
+                                <small class="text-muted">tomas</small>
                             </td>
                             <td class="cell-acciones">
                                 <div class="acciones-meds">
+                                    <a href="{% url 'historial_tomas' %}?med={{ med.id }}" class="btn-mini btn-historial" title="Ver historial">📋</a>
                                     {% if usuario_es_tutor %}
-                                        <a href="{% url 'editar_medicamento' med.id %}" class="btn-editar-med" title="Editar">✏️</a>
-                                        <form method="POST" action="{% url 'reponer_medicamento' med.id %}" class="form-inline">
+                                        <a href="{% url 'editar_medicamento' med.id %}" class="btn-mini btn-editar-med" title="Editar">✏️</a>
+                                        <form method="POST" action="{% url 'reponer_medicamento' med.id %}" style="display:inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="btn-mini btn-info" title="Reponer stock">🔄</button>
                                         </form>
-                                        <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" class="form-inline" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
+                                        <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
                                             {% csrf_token %}
                                             <button type="submit" class="btn-mini btn-danger" title="Eliminar">🗑️</button>
                                         </form>
                                     {% else %}
                                         {% if med.stock_actual > 0 %}
-                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" class="form-inline">
+                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" style="display:inline;">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn-mini btn-success" title="Registrar toma">✅ Tomé</button>
+                                            <button type="submit" class="btn-mini btn-success">✅ Tomé</button>
                                         </form>
                                         {% else %}
-                                        <button class="btn-toma-agotado" disabled>Sin stock</button>
+                                        <button class="btn-mini" style="background:#ccc; cursor:not-allowed;" disabled>Sin stock</button>
                                         {% endif %}
                                     {% endif %}
                                 </div>
@@ -244,9 +268,8 @@
         </div>
     </div>
 
-    <!-- SECCIÓN CALENDARIO -->
     <div id="seccion-cal" class="pestana-content">
-        <div class="card-sobria card-eventos-header">
+        <div class="card-sobria card-meds-header">
             <div class="eventos-title-bar">
                 <h3>Próximos Eventos</h3>
                 <a href="{% url 'calendario' %}" class="btn-mini-text">Ir al calendario completo →</a>
@@ -254,8 +277,8 @@
             {% if eventos_proximos %}
             <div class="lista-eventos">
                 {% for evento in eventos_proximos|slice:":4" %}
-                <div class="evento-card evento-tipo-{{ evento.tipo }}">
-                    <div class="evento-tipo-icon">
+                <div class="evento-card">
+                    <div style="font-size:1.8rem; margin-right:15px;">
                         {% if evento.tipo == 'medico' %}🏥
                         {% elif evento.tipo == 'social' %}👥
                         {% elif evento.tipo == 'actividad' %}🎯
@@ -272,9 +295,9 @@
                 {% endfor %}
             </div>
             {% if eventos_proximos|length > 4 %}
-            <p class="dash-ver-mas">
+            <p class="text-center text-muted" style="margin-top:15px; font-size:0.95rem;">
                 y {{ eventos_proximos|length|add:"-4" }} evento{{ eventos_proximos|length|add:"-4"|pluralize }} más —
-                <a href="{% url 'calendario' %}">ver todos</a>
+                <a href="{% url 'calendario' %}" style="color:var(--azul-profundo); font-weight:bold;">ver todos</a>
             </p>
             {% endif %}
             {% else %}
@@ -285,42 +308,83 @@
         </div>
     </div>
 
-    <!-- SECCIÓN DOCUMENTOS/FOTOS -->
     <div id="seccion-fotos" class="pestana-content">
-        <div class="card-sobria">
+        <div class="card-sobria card-meds-header">
             <div class="eventos-title-bar">
-                <h3>📸 Documentos Médicos</h3>
+                <h3>📎 Documentos Médicos</h3>
                 <a href="{% url 'fotos_mediciones' %}" class="btn-mini-text">Ver todos →</a>
             </div>
-            <p style="color: #666; margin: 20px 0;">Fotos de mediciones, recetas e indicaciones médicas del paciente.</p>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px;">
-                    📋 Ver Documentos Pendientes
+            <p class="text-muted">
+                {% if usuario_es_tutor %}
+                    Recetas, indicaciones y otros archivos que el paciente comparte con vos.
+                    {% if docs_pendientes > 0 %}
+                    <br><br>Hay <strong>{{ docs_pendientes }}</strong> documento{{ docs_pendientes|pluralize }} pendiente{{ docs_pendientes|pluralize }} de revisar.
+                    {% else %}
+                    <br><br>Todos los documentos ya fueron revisados.
+                    {% endif %}
+                {% else %}
+                    Subí recetas, indicaciones médicas u otros archivos para que tu tutor los pueda ver.
+                {% endif %}
+            </p>
+            <div class="form-actions-container" style="justify-content: flex-start; margin-top: 15px;">
+                <a href="{% url 'fotos_mediciones' %}" class="btn-primary" style="width: auto; padding: 12px 22px;">
+                    📋 Ver Documentos
                 </a>
-                <a href="{% url 'subir_foto' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px; background: #2ecc71;">
+                {% if not usuario_es_tutor %}
+                <a href="{% url 'subir_foto' %}" class="btn-primary" style="background:#2ecc71; width: auto; padding: 12px 22px;">
                     📤 Subir Documento
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- SECCIÓN MEDICIONES -->
+    {% if controles_permitidos %}
     <div id="seccion-mediciones" class="pestana-content">
-        <div class="card-sobria">
+        <div class="card-sobria card-meds-header">
             <div class="eventos-title-bar">
-                <h3>📊 Historial de Mediciones</h3>
-                <a href="{% url 'mediciones' %}" class="btn-mini-text">Ver historial completo →</a>
+                <h3>📊 Evolución de Mediciones</h3>
+                <a href="{% url 'mediciones' %}" class="btn-mini-text">Ver historial →</a>
             </div>
-            <p style="color: #666; margin: 20px 0;">Presión arterial, peso y glucosa del paciente.</p>
-            <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; width: auto; padding: 14px 25px; display: inline-block;">
-                📊 Ver Mediciones
-            </a>
+            <p class="text-muted" style="margin-bottom:20px;">Seguimiento de los últimos registros. Los datos son cargados por el tutor a partir de las fotos de medición.</p>
+
+            {% if mediciones_json %}
+            <div class="radio-group-container">
+                {% if 'presion' in controles_permitidos %}
+                <button onclick="mostrarGrafico('presion')" id="btn-graf-presion" class="btn-graf-tipo active-graf">🩸 Presión</button>
+                {% endif %}
+                {% if 'glucosa' in controles_permitidos %}
+                <button onclick="mostrarGrafico('glucosa')" id="btn-graf-glucosa" class="btn-graf-tipo">🩹 Glucosa</button>
+                {% endif %}
+                {% if 'peso' in controles_permitidos %}
+                <button onclick="mostrarGrafico('peso')" id="btn-graf-peso" class="btn-graf-tipo">⚖️ Peso</button>
+                {% endif %}
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="grafico-mediciones"></canvas>
+            </div>
+            <p id="grafico-sin-datos" class="chart-empty">Sin registros para este tipo de medición.</p>
+
+            {% else %}
+            <div class="empty-state">
+                <p>📭 Todavía no hay mediciones registradas.</p>
+                <p class="text-muted" style="font-size:0.9rem;">El tutor puede cargar los datos desde la sección de Documentos.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
+    {% endif %}
 
 </main>
+
+{% if controles_permitidos and mediciones_json %}
+<script id="mediciones-data" type="application/json">{{ mediciones_json|safe }}</script>
+<script id="controles-data" type="application/json">{{ controles_permitidos|safe }}</script>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="{% static 'core/js/main.js' %}"></script>
-{% endblock %}
+{% endblock scripts %}

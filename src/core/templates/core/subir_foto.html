@@ -5,9 +5,7 @@
 <main class="main-content auth-container">
     <div class="card-sobria auth-card">
 
-        <a href="{% url 'fotos_mediciones' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; display: block; margin-bottom: 25px;">
-            ← Volver a Documentos
-        </a>
+        <a href="{% url 'fotos_mediciones' %}" class="back-link">← Volver a Documentos</a>
 
         <h2 class="card-title">📎 Subir Documento</h2>
         <p style="color: #666; margin-bottom: 25px;">Podés subir fotos de mediciones, recetas o indicaciones médicas.</p>
@@ -18,7 +16,12 @@
             <div class="form-group">
                 <label>Tipo de documento</label>
                 <select name="tipo" class="form-control" required style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-                    <option value="medicion">📏 Foto de Medición</option>
+        
+                    {# Solo mostramos la opción de medición si el paciente tiene al menos un control habilitado #}
+                    {% if perfil.requiere_control_presion or perfil.requiere_control_glucosa or perfil.requiere_control_peso %}
+                        <option value="medicion">📏 Foto de Medición</option>
+                    {% endif %}
+        
                     <option value="receta">💊 Receta Médica</option>
                     <option value="indicacion">📝 Indicación Médica</option>
                     <option value="otro">📄 Otro</option>

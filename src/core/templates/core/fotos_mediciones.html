@@ -3,148 +3,156 @@
 
 {% block content %}
 <main class="main-content">
-    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--azul-profundo); font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 30px;">
-        ← Volver al Dashboard
-    </a>
+    <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
 
-    <div style="max-width: 1200px; margin: 0 auto;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">📸 Documentos Médicos</h2>
-            
-            <div style="display: flex; gap: 12px;">
-                <!-- CAMBIO 1: Botón para que cualquiera (especialmente el paciente) pueda subir un documento -->
-                <a href="{% url 'subir_foto' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px; background-color: #2ecc71;">
-                    ➕ Subir Foto / PDF
-                </a>
-                <a href="{% url 'mediciones' %}" class="btn-primary" style="text-decoration: none; padding: 14px 25px;">
-                    Ver Mediciones 📊
-                </a>
-            </div>
+    <div style="max-width:1200px; margin:0 auto;">
+
+        <div class="eventos-title-bar">
+            <h2 style="margin:0; color:var(--azul-profundo); font-size:1.8rem;">📎 Documentos Médicos</h2>
+            {% if not usuario_es_tutor %}
+            <a href="{% url 'subir_foto' %}" class="btn-primary" style="background:#2ecc71; width:auto; padding:12px 22px;">➕ Subir Documento</a>
+            {% endif %}
         </div>
 
-        {# Filtros por tipo #}
+        {# Filtros #}
         <div class="doc-filter-buttons">
-            <a href="?tipo=" class="doc-filter-btn doc-filter-todos">📋 Todos</a>
-            <a href="?tipo=medicion" class="doc-filter-btn doc-filter-medicion">📏 Mediciones</a>
-            <a href="?tipo=receta" class="doc-filter-btn doc-filter-receta">💊 Recetas</a>
-            <a href="?tipo=indicacion" class="doc-filter-btn doc-filter-indicacion">📝 Indicaciones</a>
-            <a href="?tipo=otro" class="doc-filter-btn doc-filter-otro">📄 Otros</a>
+            <a href="?tipo=" class="doc-filter-btn doc-filter-todos {% if not tipo_filtro %}active{% endif %}">📋 Todos</a>
+            {% if controles_permitidos %}
+            <a href="?tipo=medicion" class="doc-filter-btn doc-filter-medicion {% if tipo_filtro == 'medicion' %}active{% endif %}">📏 Mediciones</a>
+            {% endif %}
+            <a href="?tipo=receta" class="doc-filter-btn doc-filter-receta {% if tipo_filtro == 'receta' %}active{% endif %}">💊 Recetas</a>
+            <a href="?tipo=indicacion" class="doc-filter-btn doc-filter-indicacion {% if tipo_filtro == 'indicacion' %}active{% endif %}">📝 Indicaciones</a>
+            <a href="?tipo=otro" class="doc-filter-btn doc-filter-otro {% if tipo_filtro == 'otro' %}active{% endif %}">📄 Otros</a>
         </div>
 
-        {# Documentos Pendientes de Procesar #}
+        {# Pendientes #}
         {% if fotos_pendientes %}
-        <div class="card-sobria" style="padding: 30px; margin-bottom: 30px; border-top: 6px solid #e74c3c;">
-            <h3 style="color: #e74c3c; margin-bottom: 20px; font-size: 1.3rem;">⏳ Pendientes de Revisar ({{ fotos_pendientes|length }})</h3>
-            
+        <div class="card-sobria" style="padding:30px; margin-bottom:30px; border-top:6px solid #e74c3c;">
+            <h3 style="color:#e74c3c; margin-bottom:20px; font-size:1.3rem;">⏳ Pendientes ({{ fotos_pendientes|length }})</h3>
             <div class="doc-grid">
                 {% for foto in fotos_pendientes %}
-                <div class="doc-card">
-                    
-                    {# Etiqueta de Tipo #}
-                    <div class="doc-card-type {% if foto.tipo == 'medicion' %}medicion{% elif foto.tipo == 'receta' %}receta{% elif foto.tipo == 'indicacion' %}indicacion{% else %}otro{% endif %}">
-                        {{ foto.get_tipo_display }}
-                    </div>
-                    
-                    {# Imagen o PDF #}
+                <div class="doc-card" style="cursor:pointer;"
+                     data-id="{{ foto.id }}"
+                     data-display="{{ foto.get_tipo_display }}"
+                     data-tipo="{{ foto.tipo }}"
+                     data-url="{% if foto.imagen %}{{ foto.imagen.url }}{% endif %}"
+                     data-fecha="{{ foto.fecha_subida|date:'d/m/Y H:i' }}"
+                     data-nota="{{ foto.nota_paciente|escapejs }}"
+                     data-paciente="{{ foto.paciente.first_name|default:foto.paciente.username|escapejs }}"
+                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}">
+
+                    <div class="doc-card-type">{{ foto.get_tipo_display }}</div>
                     {% if foto.imagen %}
                         {% if ".pdf" in foto.imagen.url|lower %}
-                        <a href="{{ foto.imagen.url }}" target="_self" style="display:block; text-decoration:none;">
-                            <div class="doc-card-image" style="display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff5f5; border:2px dashed #e74c3c; gap:8px;">
-                                <span style="font-size:2.5rem;">📄</span>
-                                <span style="font-size:0.85rem; font-weight:700; color:#c0392b;">PDF — Click para abrir</span>
-                            </div>
-                        </a>
+                        <div class="pdf-preview-box"><p class="pdf-icon">📄</p><small style="color:#666;">PDF</small></div>
                         {% else %}
-                        <a href="{{ foto.imagen.url }}" target="_blank">
-                            <img src="{{ foto.imagen.url }}" class="doc-card-image" style="cursor:zoom-in;" title="Click para ver en tamaño completo">
-                        </a>
+                        <img src="{{ foto.imagen.url }}" class="doc-card-image">
                         {% endif %}
-                    {% else %}
-                    <div class="doc-card-no-image">Sin imagen</div>
                     {% endif %}
-                    
-                    {# Info #}
                     <div class="doc-card-content">
-                        <p class="doc-card-date">{{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
-                        
-                        {% if foto.nota_paciente %}
-                        <p class="doc-card-comment">
-                            <strong>{{ foto.paciente.first_name|default:foto.paciente.username }}:</strong> "{{ foto.nota_paciente }}"
-                        </p>
-                        {% endif %}
-                        
-                        <!-- CAMBIO 2: Condicional de Rol para las acciones administrativas -->
-                        {% if usuario_es_tutor %}
-                            {# ACCIONES EXCLUSIVAS DEL TUTOR #}
-                            {% if foto.tipo == 'medicion' %}
-                            <a href="{% url 'cargar_dato' foto.id %}" class="btn-primary" style="width: 100%; text-decoration: none; text-align: center; display: block; margin-top: 15px; padding: 12px; font-size: 0.95rem;">
-                                + Cargar Datos
-                            </a>
-                            {% else %}
-                            <div class="doc-card-actions" style="display:flex; gap:10px; margin-top:15px;">
-                                <form method="POST" action="/fotos-mediciones/{{ foto.id }}/procesar/" style="flex:1;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-primary" style="width:100%; padding:12px; font-size:0.9rem;">✓ Revisar</button>
-                                </form>
-                                <form method="POST" action="/fotos-mediciones/{{ foto.id }}/rechazar/" style="flex:1;" onsubmit="return confirm('¿Eliminar este documento?')">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-reject" style="width:100%; padding:12px; font-size:0.9rem;">✗ Rechazar</button>
-                                </form>
-                            </div>
-                            {% endif %}
-                        {% else %}
-                            {# VISTA PARA EL PACIENTE (Aviso amigable) #}
-                            <div style="text-align: center; margin-top: 15px; padding: 10px; background: #fef9e7; border-radius: 6px; color: #b7950b; font-size: 0.9rem; font-weight: bold;">
-                                ⏳ Tu tutor está revisando este documento
-                            </div>
-                        {% endif %}
+                        <p class="text-muted" style="margin:0; font-size:0.85rem;">{{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
-        {% else %}
-        <div class="card-sobria" style="padding: 40px; margin-bottom: 30px; text-align: center; background: #f0f4f8; border: 2px dashed #00d4ff;">
-            <p style="font-size: 1.2rem; color: #666; margin: 0;">✓ No hay documentos pendientes de revisar</p>
+        {% endif %}
+
+        {# Revisados #}
+        {% if fotos_procesadas %}
+        <div class="card-sobria" style="padding:30px; border-top:6px solid #2ecc71;">
+            <h3 style="color:#2ecc71; margin-bottom:20px; font-size:1.3rem;">✓ Revisados ({{ fotos_procesadas|length }})</h3>
+            <div class="doc-grid">
+                {% for foto in fotos_procesadas %}
+                <div class="doc-card" style="opacity:0.8; cursor:pointer;"
+                     data-id="{{ foto.id }}"
+                     data-display="{{ foto.get_tipo_display }}"
+                     data-tipo="{{ foto.tipo }}"
+                     data-url="{% if foto.imagen %}{{ foto.imagen.url }}{% endif %}"
+                     data-fecha="{{ foto.fecha_subida|date:'d/m/Y H:i' }}"
+                     data-nota="{{ foto.nota_paciente|escapejs }}"
+                     data-paciente="{{ foto.paciente.first_name|default:foto.paciente.username|escapejs }}"
+                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}">
+
+                    <div class="doc-card-type">{{ foto.get_tipo_display }}</div>
+                    {% if foto.imagen %}
+                        {% if ".pdf" in foto.imagen.url|lower %}
+                        <div class="pdf-preview-box"><p class="pdf-icon">📄</p><small style="color:#666;">PDF</small></div>
+                        {% else %}
+                        <img src="{{ foto.imagen.url }}" class="doc-card-image">
+                        {% endif %}
+                    {% endif %}
+                    <div class="doc-card-content">
+                        <p class="text-muted" style="margin:0; font-size:0.85rem;">{{ foto.fecha_subida|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
         {% endif %}
 
-        {# Documentos ya Procesados #}
-        {% if fotos_procesadas %}
-        <div class="card-sobria" style="padding: 30px; border-top: 6px solid #2ecc71;">
-            <h3 style="color: #2ecc71; margin-bottom: 20px; font-size: 1.3rem;">✓ Procesados ({{ fotos_procesadas|length }})</h3>
-            
-            <div class="doc-grid-processed">
-                {% for foto in fotos_procesadas %}
-                <div class="doc-card-processed-item">
-                    
-                    {# Etiqueta tipo pequeño #}
-                    <div class="doc-card-type {% if foto.tipo == 'medicion' %}medicion{% elif foto.tipo == 'receta' %}receta{% elif foto.tipo == 'indicacion' %}indicacion{% else %}otro{% endif %}">
-                        {{ foto.get_tipo_display }}
-                    </div>
-                    
-                    {# Imagen #}
-                    {% if foto.imagen %}
-                        {% if ".pdf" in foto.imagen.url|lower %}
-                        <div style="height: 150px; background: #ffebee; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
-                            <span style="font-size: 2rem;">📄</span>
-                            <span style="font-size: 0.85rem; font-weight: bold; color: #c62828;">ARCHIVO PDF</span>
-                        </div>
-                        {% else %}
-                        <img src="{{ foto.imagen.url }}" class="doc-card-processed-image">
-                        {% endif %}
-                    {% else %}
-                        <div class="doc-card-processed-no-image">Sin imagen</div>
-                    {% endif %}
-                                    </div>
-                {% endfor %}
-            </div>
+        {% if not fotos_pendientes and not fotos_procesadas %}
+        <div class="card-sobria" style="padding:60px; text-align:center;">
+            <p style="font-size:3rem; margin-bottom:10px;">📭</p>
+            <p style="color:#666; font-size:1.1rem;">No hay documentos todavía.</p>
         </div>
         {% endif %}
 
     </div>
 </main>
 
+{# MODAL #}
+<div id="modal-doc" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <button onclick="cerrarModal()" class="close-modal">✕</button>
 
+        <div id="modal-header" style="margin-bottom:15px;">
+            <span id="modal-badge" style="display:inline-block; background:var(--azul-profundo); color:white; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:700; margin-bottom:8px;"></span>
+            <p id="modal-fecha" style="color:#999; font-size:0.9rem; margin:0;"></p>
+            <p id="modal-paciente-nombre" style="font-weight:700; margin:4px 0 0;"></p>
+        </div>
+
+        {# Contenido del archivo #}
+        <div id="modal-archivo"></div>
+
+        {# Nota del paciente #}
+        <div id="modal-nota-wrapper" style="display:none;">
+            <strong>Nota:</strong> <span id="modal-nota"></span>
+        </div>
+
+        {# Acciones — solo visibles para el tutor #}
+        <div id="modal-acciones" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;">
+            <a id="modal-btn-cargar" href="#" class="btn-primary"
+               style="display:none; text-decoration:none; padding:10px 18px; border-radius:8px; font-weight:600;">
+                📊 Cargar datos de medición
+            </a>
+            <form id="form-aceptar" method="POST" style="display:none;">
+                {% csrf_token %}
+                <button type="submit"
+                        style="background:#2ecc71; color:white; border:none; padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer;">
+                    ✓ Marcar como revisado
+                </button>
+            </form>
+            <form id="form-rechazar" method="POST" style="display:none;">
+                {% csrf_token %}
+                <button type="submit"
+                        style="background:#e74c3c; color:white; border:none; padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer;"
+                        onclick="return confirm('¿Eliminar este documento? Esta acción no se puede deshacer.')">
+                    🗑 Eliminar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'core/js/main.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.doc-card').forEach(card => {
+            card.addEventListener('click', () => lanzarModal(card));
+        });
+    });
+</script>
 {% endblock %}

@@ -1,9 +1,13 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
-<main class="main-content auth-container">
+<div class="auth-container">
     <div class="card-sobria auth-card">
-        <h2 class="card-title">💊 Cargar Medicación</h2>
+        <h2 class="card-title">💊 Cargar Medicamento</h2>
+        <p class="text-muted text-center" style="margin-bottom: 25px;">
+            Completá los datos del medicamento de <strong>{{ nombre_paciente }}</strong>.
+        </p>
 
         <form method="POST" class="auth-form-django">
             {% csrf_token %}
@@ -14,187 +18,135 @@
             </div>
             {% endif %}
 
-            <!-- SECCIÓN 1: Datos Básicos -->
-            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📋 Datos Básicos</h4>
+            {# Datos Básicos #}
+            <div class="form-section-card">
+                <h4 class="form-section-title">📋 Datos Básicos</h4>
 
                 <div class="form-group">
-                    <label for="id_nombre">{{ form.nombre.label }}</label>
+                    <label>Nombre del Medicamento</label>
                     {{ form.nombre }}
                     {% if form.nombre.errors %}<div class="errorlist">{{ form.nombre.errors }}</div>{% endif %}
                 </div>
 
                 <div class="form-row-2">
                     <div class="form-group">
-                        <label for="id_tipo_presentacion">{{ form.tipo_presentacion.label }}</label>
+                        <label>{{ form.tipo_presentacion.label }}</label>
                         {{ form.tipo_presentacion }}
                     </div>
                     <div class="form-group">
-                        <label for="id_unidad_medida">{{ form.unidad_medida.label }}</label>
+                        <label>{{ form.unidad_medida.label }}</label>
                         {{ form.unidad_medida }}
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="id_dosis_por_toma">{{ form.dosis_por_toma.label }}</label>
+                    <label>{{ form.dosis_por_toma.label }}</label>
                     {{ form.dosis_por_toma }}
-                    <small style="color: #666;">Cantidad exacta por toma (ej: 1 comprimido, 15 gotas, 5ml)</small>
+                    <small class="text-muted">Ej: 1 comprimido, 15 gotas, 5ml</small>
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: Frecuencia -->
-            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">⏰ Frecuencia de Toma</h4>
+            {# Frecuencia #}
+            <div class="form-section-card">
+                <h4 class="form-section-title">⏰ Frecuencia de Toma</h4>
 
-                <!-- Selector de tipo de frecuencia -->
                 <div class="form-group">
-                    <label>¿Cómo se toma este medicamento?</label>
-                    <div style="display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+                    <label>¿Cómo se toma?</label>
+                    <div class="radio-group-container">
                         {% for radio in form.frecuencia_tipo %}
                         <label class="radio-card">
-                            {{ radio.tag }}
-                            <span>{{ radio.choice_label }}</span>
+                            {{ radio.tag }}<span>{{ radio.choice_label }}</span>
                         </label>
                         {% endfor %}
                     </div>
                 </div>
 
-                <!-- Opción A: Horario fijo — campos time con name=horario_N, la vista los une -->
-                <div id="campos-fijo" class="frecuencia-panel" style="display: none;">
+                <div id="campos-fijo" class="frecuencia-panel" style="display:none;">
                     <div class="form-group">
                         <label>Horario/s de toma</label>
-                        <div id="horarios-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                            <input type="time" name="horario_0" class="form-control" style="width: 140px;">
+                        <div id="horarios-container" class="radio-group-container">
+                            <input type="time" name="horario_0" class="form-control" style="width:140px;">
                         </div>
-                        <button type="button" onclick="agregarHorario()" style="background: none; border: 2px dashed var(--azul-profundo); color: var(--azul-profundo); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem;">
-                            + Agregar otro horario
+                        <button type="button" onclick="agregarHorario()" class="btn-outline-dashed">
+                            + Agregar horario
                         </button>
-                        <small style="display: block; color: #666; margin-top: 8px;">Podés agregar uno o más horarios del día.</small>
                     </div>
                 </div>
 
-                <!-- Opción B: Cada X horas -->
-                <div id="campos-intervalo" class="frecuencia-panel" style="display: none;">
+                <div id="campos-intervalo" class="frecuencia-panel" style="display:none;">
                     <div class="form-group">
-                        <label for="id_cada_cuantas_horas">Cada cuántas horas</label>
+                        <label>Cada cuántas horas</label>
                         {{ form.cada_cuantas_horas }}
-                        <small style="color: #666;">Ej: <strong>6</strong> (4 veces al día), <strong>8</strong> (3 veces al día), <strong>12</strong> (2 veces al día)</small>
+                        <small class="text-muted">Ej: 6, 8, 12, 24</small>
                     </div>
                 </div>
 
-                <!-- Opción C: Relativo a evento -->
-                <div id="campos-evento" class="frecuencia-panel" style="display: none;">
+                <div id="campos-evento" class="frecuencia-panel" style="display:none;">
                     <div class="form-group">
-                        <label for="id_evento_toma">¿Cuándo se toma?</label>
+                        <label>¿Cuándo se toma?</label>
                         {{ form.evento_toma }}
-                        <small style="color: #666;">Ej: <strong>al levantarse</strong>, <strong>antes de acostarse</strong>, <strong>con el almuerzo y la cena</strong></small>
+                        <small class="text-muted">Ej: al levantarse, con la cena</small>
                     </div>
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: Duración -->
-            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📅 Tipo de Tratamiento</h4>
+            {# Duración #}
+            <div class="form-section-card">
+                <h4 class="form-section-title">📅 Tipo de Tratamiento</h4>
 
                 <div class="form-group">
                     <label>Duración</label>
-                    <div style="display: flex; gap: 20px; margin-top: 10px;">
+                    <div class="radio-group-container">
                         {% for radio in form.duracion_tipo %}
-                        <label style="display: flex; align-items: center; gap: 8px;">
-                            {{ radio.tag }}
-                            <span>{{ radio.choice_label }}</span>
+                        <label class="radio-card-simple">
+                            {{ radio.tag }}<span>{{ radio.choice_label }}</span>
                         </label>
                         {% endfor %}
                     </div>
                 </div>
 
-                <div id="campos-fecha-fin" style="display: none;">
+                <div id="campos-fecha-fin" style="display:none;">
                     <div class="form-group">
-                        <label for="id_fecha_fin">{{ form.fecha_fin.label }}</label>
+                        <label>{{ form.fecha_fin.label }}</label>
                         {{ form.fecha_fin }}
-                        <small style="color: #666;">Fecha en que termina el tratamiento</small>
                     </div>
                 </div>
             </div>
 
-            <!-- SECCIÓN 4: Stock y Alertas -->
-            <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0; color: var(--azul-profundo);">📦 Stock y Alertas</h4>
+            {# Stock #}
+            <div class="form-section-card">
+                <h4 class="form-section-title">📦 Stock</h4>
 
                 <div class="form-row-2">
                     <div class="form-group">
-                        <label for="id_stock_actual">{{ form.stock_actual.label }}</label>
+                        <label>{{ form.stock_actual.label }}</label>
                         {{ form.stock_actual }}
                     </div>
                     <div class="form-group">
-                        <label for="id_stock_total">{{ form.stock_total.label }}</label>
+                        <label>{{ form.stock_total.label }}</label>
                         {{ form.stock_total }}
-                        <small style="color: #666;">Cantidad en caja estándar</small>
+                        <small class="text-muted">Cantidad por caja</small>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="id_umbral_stock_minimo">{{ form.umbral_stock_minimo.label }}</label>
+                    <label>{{ form.umbral_stock_minimo.label }}</label>
                     {{ form.umbral_stock_minimo }}
-                    <small style="color: #666;">Alerta cuando quede esta cantidad o menos</small>
+                    <small class="text-muted">Alerta cuando quede esta cantidad o menos</small>
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: Estado -->
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    {{ form.activo }}
-                    <span>{{ form.activo.label }}</span>
-                </label>
-            </div>
-
-            <div class="form-actions" style="display: flex; gap: 15px; margin-top: 25px;">
-                <button type="submit" class="btn-primary" style="flex: 1;">💾 Guardar Medicación</button>
-                <a href="{% url 'dashboard' %}" class="btn-salir" style="text-decoration:none; display:flex; align-items:center; justify-content:center; flex: 0.8; padding: 16px;">❌ Cancelar</a>
+            <div class="form-actions-container">
+                <button type="submit" class="btn-primary">💾 Guardar Medicamento</button>
+                <a href="{% url 'dashboard' %}" class="btn-cancelar">Cancelar</a>
             </div>
         </form>
     </div>
-</main>
-
-<style>
-    .form-row-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-    }
-    @media (max-width: 768px) {
-        .form-row-2 { grid-template-columns: 1fr; }
-    }
-    .radio-card {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.2s;
-        background: white;
-    }
-    .radio-card:has(input:checked) {
-        border-color: var(--azul-profundo);
-        background: #e8f0fe;
-        color: var(--azul-profundo);
-    }
-    .frecuencia-panel {
-        margin-top: 15px;
-        padding: 15px;
-        background: white;
-        border-radius: 8px;
-        border-left: 4px solid var(--azul-profundo);
-    }
-</style>
+</div>
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
     const radiosFrecuencia = document.querySelectorAll('input[name="frecuencia_tipo"]');
     const radiosDuracion   = document.querySelectorAll('input[name="duracion_tipo"]');
 
@@ -212,27 +164,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     radiosFrecuencia.forEach(r => r.addEventListener('change', actualizarFrecuencia));
     radiosDuracion.forEach(r => r.addEventListener('change', actualizarDuracion));
-
     actualizarFrecuencia();
     actualizarDuracion();
-
-    // Juntar los time pickers en el campo oculto antes de enviar
-
 });
 
+let horarioCount = 1;
 function agregarHorario() {
     const container = document.getElementById('horarios-container');
-    const idx = container.querySelectorAll('input[type=time]').length;
     const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = '6px';
+    wrapper.style.cssText = 'display:flex; align-items:center; gap:6px;';
     wrapper.innerHTML = `
-        <input type="time" name="horario_${idx}" class="form-control" style="width: 140px;">
-        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#e74c3c; font-size:1.2rem; cursor:pointer; padding:0;">✕</button>
+        <input type="time" name="horario_${horarioCount}" class="form-control" style="width:140px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;color:#e74c3c;font-size:1.2rem;cursor:pointer;">✕</button>
     `;
     container.appendChild(wrapper);
+    horarioCount++;
 }
 </script>
-{% endblock scripts %}
+{% endblock %}
 {% endblock %}

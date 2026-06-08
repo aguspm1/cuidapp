@@ -11,7 +11,7 @@
         <div class="card-sobria tutor-header-card">
             <div class="tutor-avatar">{{ user.first_name|slice:":1"|upper }}</div>
             <div class="tutor-info">
-                <h2>👤 Mi Perfil - Tutor</h2>
+                <h2>👤 Mi Perfil</h2>
                 <p>{{ user.first_name }} {{ user.last_name }}</p>
                 <p class="detail">{{ user.email }}</p>
                 <p class="date">Miembro desde {{ user.date_joined|date:"d/m/Y" }}</p>
@@ -39,10 +39,10 @@
                         </div>
                         
                         <div class="patient-actions">
-                            <a href="{% url 'seleccionar_paciente' paciente.id %}" class="btn-primary" style="text-decoration: none; background: var(--celeste-neon); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                            <a href="{% url 'seleccionar_paciente' paciente.user.id %}" class="btn-primary" style="text-decoration: none; background: var(--celeste-neon); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
                                 Seleccionar
                             </a>
-                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.id }}" class="btn-salir" style="text-decoration: none; background: var(--azul-profundo); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.user.id }}" class="btn-outline-white" style="text-decoration: none; padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
                                 Ver Perfil
                             </a>
                         </div>
@@ -60,7 +60,7 @@
         {# Botón Vincular Nuevo #}
         {% if pacientes %}
         <div class="tutor-actions">
-            <a href="{% url 'vincular_paciente' %}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 16px 30px; font-size: 1.05rem;">
+            <a href="{% url 'vincular_paciente' %}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 10px 20px; font-size: 0.9rem; width: auto;">
                 + Vincular Otro Paciente
             </a>
         </div>

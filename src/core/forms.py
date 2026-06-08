@@ -24,7 +24,16 @@ class PerfilPacienteForm(forms.ModelForm):
                   'requiere_control_peso']
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'grupo_sanguineo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'O+, O-, A+, etc.'}),
+            'grupo_sanguineo': forms.Select(
+                choices=[
+                    ('', '— Seleccionar —'),
+                    ('A+', 'A+'), ('A-', 'A-'),
+                    ('B+', 'B+'), ('B-', 'B-'),
+                    ('AB+', 'AB+'), ('AB-', 'AB-'),
+                    ('O+', 'O+'), ('O-', 'O-'),
+                ],
+                attrs={'class': 'form-control'}
+            ),
             'alergias': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
             'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
