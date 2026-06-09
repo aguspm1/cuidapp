@@ -528,7 +528,7 @@ def subir_foto(request):
         form = SubirFotoForm(request.POST, request.FILES)
         if form.is_valid():
             foto = form.save(commit=False)
-            foto.paciente = request.user
+            foto.paciente = target_user
             foto.save()
             messages.success(request, '📤 Documento subido. Tu tutor ya puede revisarlo.')
             return redirect('fotos_mediciones')

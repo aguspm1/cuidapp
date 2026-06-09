@@ -51,20 +51,21 @@ def notificaciones_tutor(request):
     else:
         tomas_nuevas = tomas_notif
 
-    # Stock bajo directo sin cálculos redundantes
-    remedios_bajos = Medicamento.objects.filter(
-        paciente__id__in=pacientes_ids, 
-        activo=True
-    ).select_related('paciente')
-    
-    count_stock_bajo = 0
-    for r in remedios_bajos:
-        if r.stock_actual <= r.umbral_stock_minimo:
-            count_stock_bajo += 1
+    # Medicamentos con stock bajo (lista completa para mostrar en el panel)
+    stock_notif = [
+        r for r in Medicamento.objects.filter(
+            paciente__id__in=pacientes_ids,
+            activo=True
+        ).select_related('paciente')
+        if r.stock_actual <= r.umbral_stock_minimo
+    ]
+
+    notif_count = len(tomas_nuevas) + len(stock_notif)
 
     return {
-        'notif_tomas': tomas_notif,
-        'notif_nuevas_count': len(tomas_nuevas) + count_stock_bajo,
-        'notif_tomas_nuevas': tomas_nuevas,
-        'count_stock_bajo': count_stock_bajo
+        # Nombres que usa base.html
+        'tomas_notif':        tomas_notif,           # lista completa de tomas (24 hs)
+        'tomas_nuevas_count': len(tomas_nuevas),      # cuántas son "nuevas" (sin leer)
+        'stock_notif':        stock_notif,            # lista de medicamentos con stock bajo
+        'notif_count':        notif_count,            # total para el badge de la campana
     }

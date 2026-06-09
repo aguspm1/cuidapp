@@ -39,11 +39,12 @@
                      data-fecha="{{ foto.fecha_subida|date:'d/m/Y H:i' }}"
                      data-nota="{{ foto.nota_paciente|escapejs }}"
                      data-paciente="{{ foto.paciente.first_name|default:foto.paciente.username|escapejs }}"
-                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}">
+                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}"
+                     data-es-pdf="{% if foto.imagen and foto.imagen.name|lower|slice:'-4:' == '.pdf' %}true{% else %}false{% endif %}">
 
                     <div class="doc-card-type">{{ foto.get_tipo_display }}</div>
                     {% if foto.imagen %}
-                        {% if ".pdf" in foto.imagen.url|lower %}
+                        {% if foto.imagen.name|lower|slice:"-4:" == ".pdf" %}
                         <div class="pdf-preview-box"><p class="pdf-icon">📄</p><small style="color:#666;">PDF</small></div>
                         {% else %}
                         <img src="{{ foto.imagen.url }}" class="doc-card-image">
@@ -72,11 +73,12 @@
                      data-fecha="{{ foto.fecha_subida|date:'d/m/Y H:i' }}"
                      data-nota="{{ foto.nota_paciente|escapejs }}"
                      data-paciente="{{ foto.paciente.first_name|default:foto.paciente.username|escapejs }}"
-                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}">
+                     data-es-tutor="{{ usuario_es_tutor|yesno:'true,false' }}"
+                     data-es-pdf="{% if foto.imagen and foto.imagen.name|lower|slice:'-4:' == '.pdf' %}true{% else %}false{% endif %}">
 
                     <div class="doc-card-type">{{ foto.get_tipo_display }}</div>
                     {% if foto.imagen %}
-                        {% if ".pdf" in foto.imagen.url|lower %}
+                        {% if foto.imagen.name|lower|slice:"-4:" == ".pdf" %}
                         <div class="pdf-preview-box"><p class="pdf-icon">📄</p><small style="color:#666;">PDF</small></div>
                         {% else %}
                         <img src="{{ foto.imagen.url }}" class="doc-card-image">

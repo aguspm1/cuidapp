@@ -56,11 +56,12 @@ window.lanzarModal = function(card) {
     const id             = card.dataset.id;
     const tipoDisplay    = card.dataset.display  || '';
     const tipo           = card.dataset.tipo      || '';
-    const url            = card.dataset.url       || '';
-    const fecha          = card.dataset.fecha     || '';
-    const nota           = card.dataset.nota      || '';
-    const pacienteNombre = card.dataset.paciente  || '';
+    const url            = card.dataset.url      || '';
+    const fecha          = card.dataset.fecha    || '';
+    const nota           = card.dataset.nota     || '';
+    const pacienteNombre = card.dataset.paciente || '';
     const esTutor        = card.dataset.esTutor === 'true';
+    const esPdf          = card.dataset.esPdf === 'true' || url.toLowerCase().endsWith('.pdf');
 
     const modal = document.getElementById('modal-doc');
     if (!modal) return;
@@ -76,7 +77,6 @@ window.lanzarModal = function(card) {
     // Imagen o PDF
     const archEl = document.getElementById('modal-archivo');
     if (archEl) {
-        const esPdf = url.toLowerCase().includes('.pdf');
         if (esPdf) {
             // iframe para ver el PDF directamente en el modal
             archEl.innerHTML = `<iframe src="${url}" style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>`;
