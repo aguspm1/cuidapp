@@ -43,12 +43,12 @@ def obtener_paciente_activo(request):
     paciente_id_sesion = request.session.get("paciente_seleccionado")
     if paciente_id_sesion:
         # Validación de seguridad: el paciente en sesión debe ser asignado a este tutor
-        perfil = PerfilPaciente.objects.filter(user_id=paciente_id_sesion, tutor=request.user).first()
+        perfil = PerfilPaciente.objects.filter(user_id=paciente_id_sesion, tutores=request.user).first()
         if perfil:
             return perfil, perfil.user
 
     # Fallback: tomar el primero disponible si no hay sesión configurada
-    perfil = PerfilPaciente.objects.filter(tutor=request.user).first()
+    perfil = PerfilPaciente.objects.filter(tutores=request.user).first()
     if perfil:
         request.session["paciente_seleccionado"] = perfil.user.id
         return perfil, perfil.user
@@ -82,7 +82,7 @@ def dashboard(request):
     # Lista de pacientes para el selector del tutor
     pacientes_list = []
     if es_tutor(request.user):
-        pacientes_list = PerfilPaciente.objects.filter(tutor=request.user).select_related('user')
+        pacientes_list = PerfilPaciente.objects.filter(tutores=request.user).select_related('user')
 
     # Si el tutor no tiene pacientes asociados todavía
     if not target_user:
@@ -179,26 +179,32 @@ def nuevo_medicamento(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = MedicamentoForm(request.POST)
+        horarios = []
+        i = 0
+        while True:
+            h = request.POST.get(f'horario_{i}', '').strip()
+            if h:
+                horarios.append(h)
+                i += 1
+            else:
+                break
+        post_data = request.POST.copy()
+        if horarios:
+            post_data['horario_fijo'] = ', '.join(horarios)
+
+        form = MedicamentoForm(post_data)
         if form.is_valid():
             medicamento = form.save(commit=False)
             medicamento.paciente = target_user
-            
-            # Procesar el campo oculto de horarios dinámicos en formato JSON
-            horarios_raw = request.POST.get('horarios_reales', '[]')
-            try:
-                lista_horarios = json.loads(horarios_raw)
-                medicamento.horarios = ", ".join(lista_horarios)
-            except json.JSONDecodeError:
-                medicamento.horarios = ""
-
             medicamento.save()
             messages.success(request, f'✅ Medicamento "{medicamento.nombre}" cargado correctamente.')
             return redirect('dashboard')
+        else:
+            messages.error(request, '❌ Revisá los datos del formulario.')
     else:
         form = MedicamentoForm()
-    
-    return render(request, 'core/nuevo_medicamento.html', {'form': form, 'nombre_paciente': target_user.first_name})
+
+    return render(request, 'core/nuevo_medicamento.html', {'form': form, 'nombre_paciente': target_user.first_name or target_user.username})
 
 @login_required
 def editar_medicamento(request, pk):
@@ -210,24 +216,35 @@ def editar_medicamento(request, pk):
     medicamento = get_object_or_404(Medicamento, pk=pk, paciente=target_user)
 
     if request.method == 'POST':
-        form = MedicamentoForm(request.POST, instance=medicamento)
+        horarios = []
+        i = 0
+        while True:
+            h = request.POST.get(f'horario_{i}', '').strip()
+            if h:
+                horarios.append(h)
+                i += 1
+            else:
+                break
+        post_data = request.POST.copy()
+        if horarios:
+            post_data['horario_fijo'] = ', '.join(horarios)
+
+        form = MedicamentoForm(post_data, instance=medicamento)
         if form.is_valid():
-            med = form.save(commit=False)
-            horarios_raw = request.POST.get('horarios_reales', '[]')
-            try:
-                lista_horarios = json.loads(horarios_raw)
-                med.horarios = ", ".join(lista_horarios)
-            except json.JSONDecodeError:
-                pass
-            med.save()
+            form.save()
             messages.success(request, '✏️ Medicamento actualizado.')
             return redirect('dashboard')
+        else:
+            messages.error(request, '❌ Revisá los datos del formulario.')
     else:
         form = MedicamentoForm(instance=medicamento)
 
-    # Parsear horarios existentes para mandarlos al front-end
-    horarios_list = [h.strip() for h in medicamento.horarios.split(',')] if medicamento.horarios else []
-    return render(request, 'core/editar_medicamento.html', {'form': form, 'medicamento': medicamento, 'horarios_list': horarios_list})
+    horarios_list = [h.strip() for h in medicamento.horario_fijo.split(',')] if medicamento.horario_fijo else []
+    return render(request, 'core/editar_medicamento.html', {
+        'form': form,
+        'medicamento': medicamento,
+        'horarios_list': horarios_list
+    })
 
 @login_required
 def registrar_toma(request, medicamento_id):
@@ -287,7 +304,7 @@ def historial_tomas(request):
 
     if es_tutor(request.user):
         # Query optimizada directa mediante Filtro relacional
-        tomas_query = RegistroToma.objects.filter(paciente__perfil_medico__tutor=request.user).select_related('medicamento', 'paciente')
+        tomas_query = RegistroToma.objects.filter(paciente__perfil_medico__tutores=request.user).select_related('medicamento', 'paciente')
     else:
         tomas_query = RegistroToma.objects.filter(paciente=request.user).select_related('medicamento', 'paciente')
 
@@ -411,11 +428,13 @@ def vincular_paciente(request):
             perfil_medico = PerfilPaciente.objects.filter(user=user_paciente).first()
             if not perfil_medico:
                 messages.error(request, '❌ El usuario seleccionado no está registrado con perfil de paciente.')
-            elif perfil_medico.tutor is not None:
-                messages.error(request, '⚠️ Este paciente ya posee un tutor asignado.')
+            elif perfil_medico.tutores.filter(pk=request.user.pk).exists():
+                messages.warning(request, f'⚠️ Ya estás vinculado a {user_paciente.first_name or user_paciente.username}.')
             else:
-                perfil_medico.tutor = request.user
-                perfil_medico.save()
+                perfil_medico.tutores.add(request.user)
+                if not perfil_medico.tutor:
+                    perfil_medico.tutor = request.user
+                    perfil_medico.save()
                 request.session["paciente_seleccionado"] = user_paciente.id
                 messages.success(request, f'✅ Vinculaste con éxito a {user_paciente.first_name or user_paciente.username}.')
                 return redirect('dashboard')
@@ -428,7 +447,7 @@ def seleccionar_paciente(request, paciente_id):
         return redirect('dashboard')
 
     # Validar propiedad antes de cambiar de ambiente
-    es_valido = PerfilPaciente.objects.filter(user_id=paciente_id, tutor=request.user).exists()
+    es_valido = PerfilPaciente.objects.filter(user_id=paciente_id, tutores=request.user).exists()
     if es_valido:
         request.session["paciente_seleccionado"] = paciente_id
         messages.success(request, "🔄 Cambiaste el entorno de visualización del paciente.")
@@ -444,7 +463,7 @@ def seleccionar_paciente(request, paciente_id):
 def perfil_tutor(request):
     if not validar_acceso_tutor(request):
         return redirect('dashboard')
-    pacientes = PerfilPaciente.objects.filter(tutor=request.user).select_related('user')
+    pacientes = PerfilPaciente.objects.filter(tutores=request.user).select_related('user')
     return render(request, 'core/perfil_tutor.html', {'pacientes': pacientes})
 
 @login_required
@@ -456,7 +475,7 @@ def perfil_paciente(request):
 def editar_perfil(request, paciente_id):
     # Seguridad básica de edición cruzada
     if es_tutor(request.user):
-        perfil = get_object_or_404(PerfilPaciente, user_id=paciente_id, tutor=request.user)
+        perfil = get_object_or_404(PerfilPaciente, user_id=paciente_id, tutores=request.user)
     else:
         if request.user.id != paciente_id:
             messages.error(request, "❌ No podés editar perfiles ajenos.")

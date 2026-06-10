@@ -9,7 +9,8 @@ from django.core.validators import FileExtensionValidator
 
 class PerfilPaciente(models.Model):
     user   = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_medico')
-    tutor  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='pacientes_a_cargo')
+    tutor  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_a_cargo')  # Mantenido por compatibilidad
+    tutores = models.ManyToManyField(User, related_name='pacientes_vinculados', blank=True, verbose_name='Tutores asignados')
 
     fecha_nacimiento     = models.DateField(null=True, blank=True)
     grupo_sanguineo      = models.CharField(max_length=5, blank=True)
@@ -195,4 +196,4 @@ class EventoCalendario(models.Model):
         ordering = ['fecha_hora']
 
     def __str__(self):
-        return f"{self.titulo} - {self.fecha_hora.date()}" 
+        return f"{self.titulo} - {self.fecha_hora.date()}"
