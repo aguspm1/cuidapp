@@ -61,7 +61,7 @@ def obtener_paciente_activo(request):
 def registro(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
-        if form.is_validate():
+        if form.is_valid():
             user = form.save()
             rol = form.cleaned_data.get('rol')
             if rol == 'paciente':

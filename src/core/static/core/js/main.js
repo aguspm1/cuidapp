@@ -78,8 +78,18 @@ window.lanzarModal = function(card) {
     const archEl = document.getElementById('modal-archivo');
     if (archEl) {
         if (esPdf) {
-            // iframe para ver el PDF directamente en el modal
-            archEl.innerHTML = `<iframe src="${url}" style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>`;
+            // Los browsers bloquean PDFs en iframes desde localhost; abrimos en pestaña nueva
+            archEl.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                            gap:16px;padding:40px;background:#f0f4f8;border-radius:10px;margin-bottom:15px;">
+                    <span style="font-size:4rem;">📄</span>
+                    <p style="margin:0;color:#555;font-size:1rem;">Los PDFs se abren en una pestaña nueva.</p>
+                    <a href="${url}" target="_blank" rel="noopener"
+                       style="background:var(--azul-profundo);color:white;padding:12px 24px;border-radius:8px;
+                              text-decoration:none;font-weight:700;font-size:1rem;">
+                        Abrir PDF ↗
+                    </a>
+                </div>`;
         } else {
             archEl.innerHTML = `<img src="${url}" style="width:100%;border-radius:10px;margin-bottom:10px;">`;
         }
