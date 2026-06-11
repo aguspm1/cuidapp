@@ -54,24 +54,72 @@ class MedicamentoForm(forms.ModelForm):
             'nombre', 'tipo_presentacion', 'unidad_medida', 'dosis_por_toma',
             'frecuencia_tipo', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
             'duracion_tipo', 'fecha_fin',
-            'stock_actual', 'stock_total', 'umbral_stock_minimo', 'activo'
+            'stock_actual', 'stock_total', 'umbral_stock_minimo'
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Clonazepam'}),
             'tipo_presentacion': forms.Select(attrs={'class': 'form-control'}),
             'unidad_medida': forms.Select(attrs={'class': 'form-control'}),
-            'dosis_por_toma': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Ej: 1, 15, 5.5'}),
+            # 👇 Se agregó 'min': '0' a la dosis
+            'dosis_por_toma': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Ej: 1, 15, 5.5', 'min': '0'}),
             'frecuencia_tipo': forms.RadioSelect(),
             'horario_fijo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 08:00 hs'}),
             'evento_toma': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: al levantarse'}),
-            'cada_cuantas_horas': forms.NumberInput(attrs={'class': 'form-control'}),
+            # 👇 Se agregó 'min': '0' a las horas
+            'cada_cuantas_horas': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'duracion_tipo': forms.RadioSelect(),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'stock_actual': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stock_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cantidad en caja estándar'}),
-            'umbral_stock_minimo': forms.NumberInput(attrs={'class': 'form-control'}),
-            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            # 👇 Se agregó 'min': '0' a todos los campos de stock
+            'stock_actual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'stock_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cantidad en caja estándar', 'min': '0'}),
+            'umbral_stock_minimo': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Validación estricta en el Backend para evitar números negativos
+        self.fields['dosis_por_toma'].min_value = 0.0
+        self.fields['stock_actual'].min_value = 0
+        self.fields['stock_total'].min_value = 0
+        self.fields['umbral_stock_minimo'].min_value = 0
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_presentacion = cleaned_data.get('tipo_presentacion')
+        unidad_medida = cleaned_data.get('unidad_medida')
+
+        # 1. Matriz de correspondencia lógica entre Presentación y Unidad de Medida
+        correspondencias = {
+            'comprimido': ['unidades'],
+            'gota': ['gotas', 'ml'],
+            'liquido': ['ml'],
+            'inyectable': ['ml'],
+        }
+
+        if tipo_presentacion and unidad_medida:
+            unidades_permitidas = correspondencias.get(tipo_presentacion, [])
+            
+            if unidad_medida not in unidades_permitidas:
+                # Obtenemos las etiquetas amigables para el mensaje de error
+                nom_presentacion = dict(Medicamento.PRESENTACION_CHOICES).get(tipo_presentacion)
+                nom_unidad = dict(Medicamento.UNIDAD_CHOICES).get(unidad_medida)
+                
+                raise forms.ValidationError(
+                    f"Inconsistencia en los datos: La unidad de medida '{nom_unidad}' "
+                    f"no corresponde para una presentación de tipo '{nom_presentacion}'."
+                )
+                
+        stock_total = cleaned_data.get('stock_total')
+        umbral = cleaned_data.get('umbral_stock_minimo')
+
+        if stock_total is not None and umbral is not None:
+            if umbral >= stock_total and stock_total > 0:
+                raise forms.ValidationError(
+                    "El umbral de alerta (stock mínimo) no puede ser mayor o igual a la cantidad total que trae la caja."
+                )
+
+        return cleaned_data
+
 
 class SubirFotoForm(forms.ModelForm):
     class Meta:

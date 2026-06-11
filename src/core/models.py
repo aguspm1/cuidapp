@@ -38,9 +38,8 @@ class Medicamento(models.Model):
     PRESENTACION_CHOICES = [
         ('comprimido', 'Comprimido'),
         ('gota',       'Gotas'),
-        ('liquido',    'Líquido'),
+        ('liquido',    'Jarabe o Líquido'),
         ('inyectable', 'Inyectable'),
-        ('otro',       'Otro'),
     ]
     UNIDAD_CHOICES = [
         ('unidades', 'Unidades'),
@@ -163,6 +162,7 @@ class DatoMedicion(models.Model):
     valor_2       = models.FloatField(null=True, blank=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True)
+    foto = models.OneToOneField(FotoDocumento, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         ordering = ['-fecha_registro']

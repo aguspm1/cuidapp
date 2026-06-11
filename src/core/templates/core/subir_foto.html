@@ -2,48 +2,52 @@
 {% load static %}
 
 {% block content %}
-<main class="main-content auth-container">
-    <div class="card-sobria auth-card">
+<div class="header-acciones" style="margin-bottom: 20px;">
+    <h2>📤 Subir Nuevo Documento</h2>
+    <a href="{% url 'fotos_mediciones' %}" class="btn-cancelar">← Volver a Documentos</a>
+</div>
 
-        <a href="{% url 'fotos_mediciones' %}" class="back-link">← Volver a Documentos</a>
-
-        <h2 class="card-title">📎 Subir Documento</h2>
-        <p style="color: #666; margin-bottom: 25px;">Podés subir fotos de mediciones, recetas o indicaciones médicas.</p>
-
-        <form method="POST" enctype="multipart/form-data" class="auth-form-django">
+<div style="max-width: 600px; margin: 0 auto;">
+    <div class="card-sobria" style="padding: 25px;">
+        <h4 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #555;">
+            Seleccioná el archivo e indicá el tipo
+        </h4>
+        
+        {# ⚠️ Importante: El enctype="multipart/form-data" es obligatorio para que Django reciba archivos #}
+        <form method="POST" enctype="multipart/form-data" action="{% url 'subir_foto' %}">
             {% csrf_token %}
-
-            <div class="form-group">
-                <label>Tipo de documento</label>
-                <select name="tipo" class="form-control" required style="width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:1rem;">
-        
-                    {# Solo mostramos la opción de medición si el paciente tiene al menos un control habilitado #}
-                    {% if perfil.requiere_control_presion or perfil.requiere_control_glucosa or perfil.requiere_control_peso %}
-                        <option value="medicion">📏 Foto de Medición</option>
-                    {% endif %}
-        
-                    <option value="receta">💊 Receta Médica</option>
-                    <option value="indicacion">📝 Indicación Médica</option>
-                    <option value="otro">📄 Otro</option>
-                </select>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">¿Qué tipo de documento vas a subir?</label>
+<select name="tipo" class="form-control" required>
+    <option value="">-- Seleccionar tipo --</option>
+    
+    {# Solo mostramos la opción de medición si el paciente tiene al menos un control activo #}
+    {% if perfil.requiere_control_presion or perfil.requiere_control_glucosa or perfil.requiere_control_peso %}
+        <option value="medicion">📊 Foto de Medición (Presión, Peso, Glucosa)</option>
+    {% endif %}
+    
+    <option value="receta">📄 Receta Médica</option>
+    <option value="indicacion">📌 Indicación / Estudio Clínico</option>
+</select>
+                <small class="text-muted">Si es una medición, tu tutor podrá extraer los valores numéricos para los gráficos.</small>
             </div>
 
-            <div class="form-group">
-                <label>Archivo (foto o PDF)</label>
-                <input type="file" name="imagen" accept="image/*,.pdf" required class="form-control">
-                <small style="color:#94a3b8;">Formatos: JPG, PNG, PDF. Máximo 5MB.</small>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Seleccionar Archivo (Imagen o PDF)</label>
+                <input type="file" name="imagen" class="form-control" accept="image/*,.pdf" required style="padding: 8px;">
             </div>
 
-            <div class="form-group">
-                <label>Comentario (opcional)</label>
-                <input type="text" name="nota_paciente" class="form-control" placeholder="Ej: Presión tomada esta mañana en ayunas">
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Nota aclaratoria (Opcional)</label>
+                <textarea name="nota_paciente" class="form-control" rows="3" placeholder="Ej: Foto del tensiómetro tomada el martes a la mañana en ayunas..."></textarea>
             </div>
 
-            <div style="display:flex; gap:15px; margin-top:25px;">
-                <button type="submit" class="btn-primary" style="flex:1;">📤 Subir Documento</button>
-                <a href="{% url 'fotos_mediciones' %}" class="btn-salir" style="flex:0.6; text-decoration:none; display:flex; align-items:center; justify-content:center; padding:16px;">Cancelar</a>
+            <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                <a href="{% url 'fotos_mediciones' %}" class="btn-cancelar" style="text-decoration: none; display: inline-flex; align-items: center;">Cancelar</a>
+                <button type="submit" class="btn-primary" style="width: auto; padding: 12px 30px;">📤 Enviar Documento</button>
             </div>
         </form>
     </div>
-</main>
+</div>
 {% endblock %}

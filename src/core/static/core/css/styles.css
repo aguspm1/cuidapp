@@ -747,3 +747,22 @@ select.form-control    { cursor: pointer; background-color: white; }
     .profile-header-card, .tutor-header-card { flex-direction: column; text-align: center; }
     .doc-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
+
+/* ============================================================
+   15. DOCUMENTOS — ESTILOS ESPECÍFICOS
+   ============================================================ */
+
+/* Pantalla dividida (foto + formulario) */
+.split-container        { display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; }
+.split-container > div  { flex: 1; min-width: 300px; }
+
+/* Grilla y tarjetas de documentos */
+.grid-documentos    { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+.card-documento     { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card-documento:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.foto-thumbnail     { height: 150px; background: #f8fafc; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; cursor: pointer; border: 1px solid #eef2f5; }
+.foto-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Paneles de medición */
+.panel-medicion { background: #eef2f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; animation: fadeIn 0.3s ease; }

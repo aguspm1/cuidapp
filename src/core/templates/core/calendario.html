@@ -7,7 +7,7 @@
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <div>
-                <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ nombre_paciente }}</h2>
+                <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ paciente.get_full_name|default:paciente.username }}</h2>
                 <p style="margin: 8px 0 0; color: #666; font-size: 1.05rem;">Gestioná turnos médicos y eventos familiares</p>
             </div>
             <div style="display: flex; gap: 15px; align-items: center;">

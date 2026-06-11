@@ -6,7 +6,7 @@
     <div class="card-sobria auth-card">
         <h2 class="card-title">📅 Agendar Nuevo Evento</h2>
         <p class="text-muted text-center" style="margin-bottom: 25px;">
-            Completá los datos para que aparezcan en el calendario de <strong>{{ nombre_paciente }}</strong>.
+            Completá los datos para que aparezcan en el calendario de <strong>{{ paciente.get_full_name|default:paciente.username }}</strong>.
         </p>
 
         <form method="POST" class="auth-form-django">

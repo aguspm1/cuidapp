@@ -26,13 +26,14 @@
                 <div class="patients-list">
                     {% for paciente in pacientes %}
                     <div class="patient-item">
-                        <div class="patient-info">
-                            <p class="patient-info-name">
-                                {{ paciente.user.first_name }} {{ paciente.user.last_name }}
-                            </p>
+                        <div class="patient-info">                            
                             <p class="patient-info-type">
                                 <span class="patient-type-badge">Paciente</span>
                             </p>
+                            <p class="patient-info-name">
+                                {{ paciente.user.first_name }} {{ paciente.user.last_name }}
+                            </p>
+
                             <p class="patient-info-user">
                                 Usuario: {{ paciente.user.username }}
                             </p>

@@ -7,10 +7,10 @@
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
-                {{ nombre_paciente|slice:":1"|upper }}
+                {{ paciente.get_full_name|default:paciente.username|slice:":1"|upper }}
             </a>
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text">
-                <h3>{{ nombre_paciente }}</h3>
+                <h3>{{ paciente.get_full_name|default:paciente.username }}</h3>
                 <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
@@ -205,13 +205,13 @@
                             <td class="cell-frecuencia">
                                 {% if med.frecuencia_tipo == 'fijo' %}
                                     {% if med.horario_fijo %}
-                                        <small class="text-muted">🕐 {{ med.horario_fijo }}</small>
+                                        <small class="text-muted">1️⃣ {{ med.horario_fijo }}</small>
                                     {% else %}
                                         <small class="text-muted">Sin horario cargado</small>
                                     {% endif %}
                                 {% elif med.frecuencia_tipo == 'intervalo' %}
                                     <small class="text-muted">🔁 Cada {{ med.cada_cuantas_horas }} hs</small>
-                                {% else %}
+                                 {% else %}
                                     <small class="text-muted">📌 {{ med.evento_toma }}</small>
                                 {% endif %}
                                 {% if med.duracion_tipo == 'temporal' %}
@@ -235,9 +235,10 @@
                                     <a href="{% url 'historial_tomas' %}?med={{ med.id }}" class="btn-mini btn-historial" title="Ver historial">📋</a>
                                     {% if usuario_es_tutor %}
                                         <a href="{% url 'editar_medicamento' med.id %}" class="btn-mini btn-editar-med" title="Editar">✏️</a>
-                                        <form method="POST" action="{% url 'reponer_medicamento' med.id %}" style="display:inline;">
+                                        <form method="POST" action="{% url 'reponer_medicamento' med.id %}" style="display:inline;" 
+                                                onsubmit="return confirm('¿Confirmás que querés reponer una caja de {{ med.stock_total }} {{ med.unidad_medida }}? El stock pasará a ser de {{ med.stock_actual|add:med.stock_total }}.');">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn-mini btn-info" title="Reponer stock">🔄</button>
+                                             <button type="submit" class="btn-mini btn-info" title="Reponer stock">🔄 Reponer</button>
                                         </form>
                                         <form method="POST" action="{% url 'eliminar_medicamento' med.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar {{ med.nombre }}?');">
                                             {% csrf_token %}
@@ -348,7 +349,8 @@
             </div>
             <p class="text-muted" style="margin-bottom:20px;">Seguimiento de los últimos registros. Los datos son cargados por el tutor a partir de las fotos de medición.</p>
 
-            {% if mediciones_json %}
+            {# 🔥 CORREGIDO: Evaluamos la variable correcta datos_grafico_json #}
+            {% if datos_grafico_json %}
             <div class="radio-group-container">
                 {% if 'presion' in controles_permitidos %}
                 <button onclick="mostrarGrafico('presion')" id="btn-graf-presion" class="btn-graf-tipo active-graf">🩸 Presión</button>
@@ -378,13 +380,25 @@
 
 </main>
 
-{% if controles_permitidos and mediciones_json %}
-<script id="mediciones-data" type="application/json">{{ mediciones_json|safe }}</script>
-<script id="controles-data" type="application/json">{{ controles_permitidos|safe }}</script>
+{% if controles_permitidos and datos_grafico_json %}
+<script id="mediciones-data" type="application/json">{{ datos_grafico_json|safe }}</script>
+<script id="controles-data" type="application/json">{{ controles_permitidos_json|safe }}</script>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="{% static 'core/js/main.js' %}"></script>
+
+<script>
+    // Solo dejamos aquí la inicialización final del gráfico
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.mostrarGrafico === 'function') {
+            const controles = JSON.parse(document.getElementById('controles-data').textContent);
+            if (controles.length > 0) {
+                window.mostrarGrafico(controles[0]);
+            }
+        }
+    });
+</script>
 {% endblock scripts %}

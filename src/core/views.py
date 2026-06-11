@@ -1,4 +1,5 @@
 import json
+from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -35,6 +36,7 @@ def obtener_paciente_activo(request):
     Devuelve (perfil, paciente_user) según el rol.
     - Paciente: su propio perfil.
     - Tutor: paciente seleccionado en sesión (valida que le pertenezca).
+    Soporta tanto tutores M2M como tutor FK legacy.
     """
     perfil_propio = PerfilPaciente.objects.filter(user=request.user).first()
     if perfil_propio:
@@ -42,14 +44,25 @@ def obtener_paciente_activo(request):
 
     paciente_id_sesion = request.session.get("paciente_seleccionado")
     if paciente_id_sesion:
-        # Validación de seguridad: el paciente en sesión debe ser asignado a este tutor
-        perfil = PerfilPaciente.objects.filter(user_id=paciente_id_sesion, tutores=request.user).first()
+        perfil = PerfilPaciente.objects.filter(
+            user_id=paciente_id_sesion
+        ).filter(
+            models.Q(tutores=request.user) | models.Q(tutor=request.user)
+        ).first()
         if perfil:
+            # Sincronizar tutores M2M si el FK existe pero M2M no
+            if perfil.tutor == request.user and not perfil.tutores.filter(pk=request.user.pk).exists():
+                perfil.tutores.add(request.user)
             return perfil, perfil.user
 
-    # Fallback: tomar el primero disponible si no hay sesión configurada
-    perfil = PerfilPaciente.objects.filter(tutores=request.user).first()
+    # Fallback: buscar por tutores M2M o FK legacy
+    perfil = PerfilPaciente.objects.filter(
+        models.Q(tutores=request.user) | models.Q(tutor=request.user)
+    ).first()
     if perfil:
+        # Sincronizar automáticamente
+        if perfil.tutor == request.user and not perfil.tutores.filter(pk=request.user.pk).exists():
+            perfil.tutores.add(request.user)
         request.session["paciente_seleccionado"] = perfil.user.id
         return perfil, perfil.user
 
@@ -82,12 +95,15 @@ def dashboard(request):
     # Lista de pacientes para el selector del tutor
     pacientes_list = []
     if es_tutor(request.user):
-        pacientes_list = PerfilPaciente.objects.filter(tutores=request.user).select_related('user')
+        from django.db.models import Q
+        pacientes_list = PerfilPaciente.objects.filter(
+            Q(tutores=request.user) | Q(tutor=request.user)
+        ).select_related('user').distinct()
 
     # Si el tutor no tiene pacientes asociados todavía
     if not target_user:
         context = {
-            'nombre_paciente': "Sin Pacientes",
+            'paciente': "Sin Pacientes",
             'pacientes_list': pacientes_list,
             'tutor_sin_pacientes': True
         }
@@ -95,7 +111,7 @@ def dashboard(request):
 
     # Consultas optimizadas con select_related
     remedios = Medicamento.objects.filter(paciente=target_user, activo=True).select_related('paciente')
-    
+
     # Calcular stock bajo en una sola iteración y evitar duplicar lógica
     remedios_stock_bajo = []
     for med in remedios:
@@ -150,7 +166,7 @@ def dashboard(request):
 
     context = {
         'perfil':              perfil,
-        'nombre_paciente':     target_user.first_name or target_user.username,
+        'paciente':     target_user,
         'remedios':            remedios,
         'remedios_stock_bajo': remedios_stock_bajo,
         'proximos_eventos':    proximos_eventos,
@@ -159,6 +175,7 @@ def dashboard(request):
         'docs_pendientes':     docs_pendientes,
         'ultima_medicion':     ultima_medicion,
         'controles_permitidos': controles_permitidos,
+        'controles_permitidos_json': json.dumps(controles_permitidos),
         'pacientes_list':      pacientes_list,
         'datos_grafico_json':  json.dumps(datos_grafico),
         'tutor_sin_pacientes': False
@@ -170,15 +187,48 @@ def dashboard(request):
 
 @login_required
 def nuevo_medicamento(request):
-    if not validar_acceso_tutor(request):
-        return redirect('dashboard')
-
     perfil, target_user = obtener_paciente_activo(request)
-    if not target_user:
-        messages.error(request, "❌ Debés vincular un paciente antes de agregar medicamentos.")
-        return redirect('dashboard')
-
+    
     if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        tipo_presentacion = request.POST.get('tipo_presentacion')
+        unidad_medida = request.POST.get('unidad_medida')
+        
+        # Parseo seguro de números
+        try:
+            dosis_por_toma = float(request.POST.get('dosis_por_toma', 0))
+            stock_actual = int(request.POST.get('stock_actual', 0))
+            stock_total = int(request.POST.get('stock_total', 0))
+            umbral_stock_minimo = int(request.POST.get('umbral_stock_minimo', 0))
+        except ValueError:
+            messages.error(request, "❌ Error: Los valores numéricos ingresados no son válidos.")
+            return render(request, 'core/nuevo_medicamento.html', request.POST)
+
+        # 🛡️ VALIDACIÓN CAPA SERVIDOR: Signos y coherencia básica
+        if dosis_por_toma <= 0 or stock_actual < 0 or stock_total < 0 or umbral_stock_minimo < 0:
+            messages.error(request, "❌ Error: No se permiten valores negativos ni dosis en cero.")
+            return render(request, 'core/nuevo_medicamento.html', request.POST)
+
+        if dosis_por_toma > stock_actual or dosis_por_toma > stock_total:
+            messages.error(request, "❌ Error: La dosis no puede ser mayor que las unidades del stock.")
+            return render(request, 'core/nuevo_medicamento.html', request.POST)
+
+        # Validación del intervalo de horas (máximo 24 hs)
+        frecuencia_tipo = request.POST.get('frecuencia_tipo')
+        cada_cuantas_horas = request.POST.get('cada_cuantas_horas')
+        
+        if frecuencia_tipo == 'intervalo' and cada_cuantas_horas:
+            try:
+                horas = int(cada_cuantas_horas)
+                if horas < 1 or horas > 24:
+                    messages.error(request, "❌ Error: El intervalo debe estar configurado estrictamente entre 1 y 24 horas.")
+                    return render(request, 'core/nuevo_medicamento.html', request.POST)
+            except ValueError:
+                messages.error(request, "❌ Error: El intervalo de horas debe ser un número entero.")
+                return render(request, 'core/nuevo_medicamento.html', request.POST)
+
+        # Si supera los filtros, se procede al guardado normal
+        # Unir horario_0, horario_1... en horario_fijo
         horarios = []
         i = 0
         while True:
@@ -188,23 +238,29 @@ def nuevo_medicamento(request):
                 i += 1
             else:
                 break
-        post_data = request.POST.copy()
-        if horarios:
-            post_data['horario_fijo'] = ', '.join(horarios)
 
-        form = MedicamentoForm(post_data)
-        if form.is_valid():
-            medicamento = form.save(commit=False)
-            medicamento.paciente = target_user
-            medicamento.save()
-            messages.success(request, f'✅ Medicamento "{medicamento.nombre}" cargado correctamente.')
-            return redirect('dashboard')
-        else:
-            messages.error(request, '❌ Revisá los datos del formulario.')
-    else:
-        form = MedicamentoForm()
+        medicamento = Medicamento(
+            paciente=target_user,
+            nombre=nombre,
+            tipo_presentacion=tipo_presentacion,
+            unidad_medida=unidad_medida,
+            dosis_por_toma=dosis_por_toma,
+            stock_actual=stock_actual,
+            stock_total=stock_total,
+            umbral_stock_minimo=umbral_stock_minimo,
+            frecuencia_tipo=frecuencia_tipo,
+            horario_fijo=', '.join(horarios) if horarios else '',
+            cada_cuantas_horas=int(cada_cuantas_horas) if cada_cuantas_horas else None,
+            evento_toma=request.POST.get('evento_toma', ''),
+            duracion_tipo=request.POST.get('duracion_tipo'),
+            fecha_fin=request.POST.get('fecha_fin') if request.POST.get('duracion_tipo') == 'temporal' else None
+        )
+        medicamento.save()
+        
+        messages.success(request, f"💊 {nombre} guardado con éxito en el plan.")
+        return redirect('dashboard')
 
-    return render(request, 'core/nuevo_medicamento.html', {'form': form, 'nombre_paciente': target_user.first_name or target_user.username})
+    return render(request, 'core/nuevo_medicamento.html')
 
 @login_required
 def editar_medicamento(request, pk):
@@ -269,19 +325,19 @@ def registrar_toma(request, medicamento_id):
 
 @login_required
 def reponer_medicamento(request, medicamento_id):
-    if not validar_acceso_tutor(request):
-        return redirect('dashboard')
-
-    perfil, target_user = obtener_paciente_activo(request)
-    med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=target_user)
+    # Asumo que tu modelo se llama Medicamento
+    med = get_object_or_404(Medicamento, id=medicamento_id)
     
-    # Corrección del bug: Resetea el stock al valor del empaque/caja nueva (stock_total)
-    med.stock_actual = med.stock_total
-    med.save()
-    
-    messages.success(request, f'📦 Caja nueva registrada para {med.nombre}. Stock reestablecido a {med.stock_total}.')
-    return redirect('dashboard')
-
+    if request.method == 'POST':
+        # Sumamos la cantidad de la caja (stock_total) a lo que ya teníamos (stock_actual)
+        med.stock_actual += med.stock_total
+        med.save()
+        
+        # Opcional: Podés mandar un mensaje de éxito
+        messages.success(request, f"¡Se sumó una caja de {med.stock_total} {med.unidad_medida} a {med.nombre}!")
+        
+    # Volvemos a la página anterior
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 @login_required
 def eliminar_medicamento(request, pk):
     if not validar_acceso_tutor(request):
@@ -327,7 +383,7 @@ def historial_tomas(request):
 def calendario_eventos(request):
     perfil, target_user = obtener_paciente_activo(request)
     if not target_user:
-        return render(request, 'core/calendario.html', {'eventos_json': '[]', 'nombre_paciente': "Sin Paciente"})
+        return render(request, 'core/calendario.html', {'eventos_json': '[]', 'paciente': "Sin Paciente"})
 
     eventos = EventoCalendario.objects.filter(paciente=target_user)
     
@@ -344,7 +400,7 @@ def calendario_eventos(request):
 
     return render(request, 'core/calendario.html', {
         'eventos_json': json.dumps(eventos_data),
-        'nombre_paciente': target_user.first_name or target_user.username
+        'paciente': target_user or target_user.username
     })
 
 @login_required
@@ -374,7 +430,7 @@ def nuevo_evento(request):
         messages.success(request, '📅 Evento agendado correctamente.')
         return redirect('calendario')
 
-    return render(request, 'core/nuevo_evento.html', {'nombre_paciente': target_user.first_name})
+    return render(request, 'core/nuevo_evento.html', {'paciente': target_user})
 
 @login_required
 def editar_evento(request, pk):
@@ -538,14 +594,26 @@ def fotos_mediciones(request):
         'controles_permitidos': controles_permitidos,
         'perfil':               perfil,
         'usuario_es_tutor':     es_tutor(request.user),
+        'paciente': target_user,
     })
 
 @login_required
 def subir_foto(request):
     perfil, target_user = obtener_paciente_activo(request)
+    
     if request.method == 'POST':
         form = SubirFotoForm(request.POST, request.FILES)
         if form.is_valid():
+            tipo = form.cleaned_data.get('tipo')
+            
+            # 🛡️ VALIDACIÓN: Si intenta subir una medición y no tiene controles habilitados
+            if tipo == 'medicion':
+                if not (perfil.requiere_control_presion or 
+                        perfil.requiere_control_glucosa or 
+                        perfil.requiere_control_peso):
+                    messages.error(request, "⚠️ No tienes controles de mediciones habilitados en tu perfil.")
+                    return redirect('subir_foto')
+            
             foto = form.save(commit=False)
             foto.paciente = target_user
             foto.save()
@@ -553,49 +621,88 @@ def subir_foto(request):
             return redirect('fotos_mediciones')
     else:
         form = SubirFotoForm()
+        
     return render(request, 'core/subir_foto.html', {'form': form, 'perfil': perfil})
 
 @login_required
 def cargar_dato_medicion(request, foto_id):
-    if not validar_acceso_tutor(request):
-        return redirect('dashboard')
-
-    foto = get_object_or_404(FotoDocumento, pk=foto_id)
-    perfil = PerfilPaciente.objects.filter(user=foto.paciente).first()
+    foto = get_object_or_404(FotoDocumento, id=foto_id)
+    perfil, target_user = obtener_paciente_activo(request)
     
-    if not perfil or perfil.tutor != request.user:
-        messages.error(request, '❌ No tenés permisos sobre este archivo.')
+    # Conseguir los controles permitidos del perfil del paciente
+    controles_permitidos = []
+    if perfil:
+        if perfil.requiere_control_presion: controles_permitidos.append('presion')
+        if perfil.requiere_control_glucosa: controles_permitidos.append('glucosa')
+        if perfil.requiere_control_peso:    controles_permitidos.append('peso')
+
+    medicion_existente = DatoMedicion.objects.filter(foto=foto).first()
+
+    # 🛡️ BLINDAJE: Si ya fue procesada y NO existe medición (para editar), bloqueamos el acceso
+    # Esto evita que el tutor entre a "cargar" algo que ya se terminó.
+    if foto.procesada and not medicion_existente:
+        messages.error(request, "⚠️ Este documento ya ha sido procesado.")
         return redirect('fotos_mediciones')
 
     if request.method == 'POST':
         tipo = request.POST.get('tipo')
-        observaciones = request.POST.get('observaciones', '')
+        
+        if tipo not in controles_permitidos:
+            messages.error(request, "⚠️ Esta medición no está habilitada para el perfil del paciente.")
+            return redirect('fotos_mediciones')
 
-        v1, v2 = 0.0, None
-        if tipo == 'presion':
-            v1 = float(request.POST.get('presion_sistolica', 0))
-            v2 = float(request.POST.get('presion_diastolica', 0))
-        elif tipo == 'peso':
-            v1 = float(request.POST.get('peso', 0))
-        elif tipo == 'glucosa':
-            v1 = float(request.POST.get('glucosa', 0))
+        # Captura y validación de los datos clínicos extraídos
+        val1 = 0.0
+        val2 = None
 
-        DatoMedicion.objects.create(
-            paciente=foto.paciente,
-            tipo=tipo,
-            valor_1=v1,
-            valor_2=v2,
-            observaciones=observaciones
-        )
+        try:
+            if tipo == 'presion':
+                val1 = float(request.POST.get('presion_sistolica', 0))
+                val2 = float(request.POST.get('presion_diastolica', 0))
+                if val1 <= 0 or val2 <= 0:
+                    messages.error(request, "❌ Error: Los valores de presión arterial deben ser mayores a cero.")
+                    return redirect('cargar_dato', foto_id=foto.id)
+            elif tipo == 'peso':
+                val1 = float(request.POST.get('peso', 0))
+                if val1 <= 0:
+                    messages.error(request, "❌ Error: El peso registrado debe ser mayor a cero.")
+                    return redirect('cargar_dato', foto_id=foto.id)
+            elif tipo == 'glucosa':
+                val1 = float(request.POST.get('glucosa', 0))
+                if val1 <= 0:
+                    messages.error(request, "❌ Error: El nivel de glucosa debe ser mayor a cero.")
+                    return redirect('cargar_dato', foto_id=foto.id)
+        except ValueError:
+            messages.error(request, "❌ Error: Formato numérico incorrecto en la medición.")
+            return redirect('cargar_dato', foto_id=foto.id)
+
+        # Guardar o actualizar la medición
+        if medicion_existente:
+            medicion = medicion_existente
+        else:
+            medicion = DatoMedicion(paciente=foto.paciente, foto=foto)
+
+# Ajuste en la lógica de guardado:
+        medicion.tipo = tipo
+        medicion.valor_1 = val1
+        # Si es presión, guarda val2; si no, fuerza a None
+        medicion.valor_2 = val2 if tipo == 'presion' else None 
+        medicion.observaciones = request.POST.get('observaciones', '')
+        medicion.save()
 
         foto.procesada = True
-        foto.nota_tutor = f"Medición procesada numéricamente el {timezone.now().strftime('%d/%m')}"
         foto.save()
 
-        messages.success(request, '✅ Medición extraída y guardada en la ficha médica.')
+        messages.success(request, "📊 Datos médicos guardados correctamente.")
         return redirect('fotos_mediciones')
 
-    return render(request, 'core/cargar_dato.html', {'foto': foto, 'perfil': perfil})
+    context = {
+        'foto': foto,
+        'perfil': perfil,
+        'controles_permitidos': controles_permitidos,
+        'medicion': medicion_existente,
+    }
+    return render(request, 'core/cargar_dato.html', context)
 
 @login_required
 def procesar_documento(request, foto_id):
