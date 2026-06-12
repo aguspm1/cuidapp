@@ -103,7 +103,8 @@ def dashboard(request):
     # Si el tutor no tiene pacientes asociados todavía
     if not target_user:
         context = {
-            'paciente': "Sin Pacientes",
+    #Cambiado paciente por None, si no tiene pacientes asignados
+            'paciente': None,
             'pacientes_list': pacientes_list,
             'tutor_sin_pacientes': True
         }

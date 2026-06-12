@@ -3,14 +3,14 @@
 
 {% block content %}
 <main class="main-content">
-
+    <!-- Agregué un if para que no de un error si el cuidador no tiene pacientes asignados -->
     <div class="card-sobria dashboard-header">
         <div class="dashboard-header-info">
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
-                {{ paciente.get_full_name|default:paciente.username|slice:":1"|upper }}
+               {% if paciente %}{{ paciente.get_full_name|default:paciente.username|slice:":1"|upper }}{% else %}?{% endif %}
             </a>
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text">
-                <h3>{{ paciente.get_full_name|default:paciente.username }}</h3>
+                <h3>{% if paciente %}{{ paciente.get_full_name|default:paciente.username }}{% else %}Sin paciente asignado{% endif %}</h3>
                 <p>{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
             </a>
         </div>
