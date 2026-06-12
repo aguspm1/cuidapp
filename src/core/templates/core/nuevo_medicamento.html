@@ -2,30 +2,30 @@
 {% load static %}
 
 {% block content %}
-<div class="header-acciones" style="margin-bottom: 20px;">
-    <h2>💊 Cargar Nuevo Medicamento</h2>
-    <a href="{% url 'dashboard' %}" class="btn-cancelar">← Volver al Dashboard</a>
+<div class="d-flex justify-between align-center mb-30">
+    <h2 class="m-0" style="color: var(--azul-profundo);">💊 Cargar Nuevo Medicamento</h2>
+    <a href="{% url 'dashboard' %}" class="btn-cancelar w-auto">← Volver al Dashboard</a>
 </div>
 
-<div class="formulario-acordeon-container" style="max-width: 650px; margin: 0 auto;">
+<div class="mx-auto" style="max-width: 650px; margin: 0 auto;">
     <form method="POST" action="{% url 'nuevo_medicamento' %}">
         {% csrf_token %}
         
         {# ================= BLOQUE 1: INFORMACIÓN GENERAL ================= #}
-        <div class="acordeon-item active" style="background: white; border-radius: 8px; border: 1px solid #eef2f5; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <button type="button" class="acordeon-header" onclick="toggleAcordeon(this)" style="width: 100%; padding: 18px 20px; background: #f8fafc; border: none; text-align: left; font-size: 1.05rem; font-weight: bold; color: var(--azul-profundo); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <span>📋 1. Información General</span>
-                <span class="acordeon-flecha" style="transition: transform 0.2s ease;">▼</span>
+        <div class="card-sobria mb-20 acordeon-item active" style="overflow: hidden;">
+            <button type="button" class="acordeon-header d-flex justify-between align-center w-100" onclick="toggleAcordeon(this)" style="padding: 18px 20px; background: var(--gris-claro); border: none; cursor: pointer;">
+                <span class="fs-lg fw-bold" style="color: var(--azul-profundo);">📋 1. Información General</span>
+                <span class="acordeon-flecha" style="transition: var(--transicion);">▼</span>
             </button>
-            <div class="acordeon-content" style="padding: 20px; border-top: 1px solid #eef2f5;">
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">Nombre del Medicamento</label>
+            <div class="acordeon-content" style="padding: 25px; border-top: 1px solid var(--gris-borde);">
+                <div class="form-group mb-20">
+                    <label>Nombre del Medicamento</label>
                     <input type="text" name="nombre" class="form-control" required placeholder="Ej: Paracetamol 1g">
                 </div>
 
-                <div class="form-row-2" style="display: flex; gap: 15px; margin-bottom: 15px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Presentación</label>
+                <div class="form-row-2 mb-20">
+                    <div>
+                        <label class="d-block mb-10 fw-bold">Presentación</label>
                         <select name="tipo_presentacion" id="id_tipo_presentacion" class="form-control" required>
                             <option value="">-- Seleccionar --</option>
                             <option value="comprimido">Comprimido</option>
@@ -34,8 +34,8 @@
                             <option value="inyectable">Inyectable</option>
                         </select>
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Unidad de Medida</label>
+                    <div>
+                        <label class="d-block mb-10 fw-bold">Unidad de Medida</label>
                         <select name="unidad_medida" id="id_unidad_medida" class="form-control" required>
                             <option value="unidades">Unidades</option>
                             <option value="gotas">Gotas</option>
@@ -45,49 +45,49 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">Dosis por toma</label>
+                <div class="form-group m-0">
+                    <label>Dosis por toma</label>
                     <input type="number" step="0.1" min="0.1" name="dosis_por_toma" class="form-control" required placeholder="Ej: 1">
                 </div>
             </div>
         </div>
 
         {# ================= BLOQUE 2: CONTROL DE INVENTARIO ================= #}
-        <div class="acordeon-item" style="background: white; border-radius: 8px; border: 1px solid #eef2f5; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <button type="button" class="acordeon-header" onclick="toggleAcordeon(this)" style="width: 100%; padding: 18px 20px; background: #f8fafc; border: none; text-align: left; font-size: 1.05rem; font-weight: bold; color: var(--azul-profundo); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <span>📦 2. Control de Inventario</span>
-                <span class="acordeon-flecha" style="transition: transform 0.2s ease; transform: rotate(-90deg);">▼</span>
+        <div class="card-sobria mb-20 acordeon-item" style="overflow: hidden;">
+            <button type="button" class="acordeon-header d-flex justify-between align-center w-100" onclick="toggleAcordeon(this)" style="padding: 18px 20px; background: var(--gris-claro); border: none; cursor: pointer;">
+                <span class="fs-lg fw-bold" style="color: var(--azul-profundo);">📦 2. Control de Inventario</span>
+                <span class="acordeon-flecha" style="transition: var(--transicion); transform: rotate(-90deg);">▼</span>
             </button>
-            <div class="acordeon-content" style="padding: 20px; display: none; border-top: 1px solid #eef2f5;">
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 5px;">Cantidad por envase/caja nueva (Stock Total)</label>
+            <div class="acordeon-content" style="padding: 25px; display: none; border-top: 1px solid var(--gris-borde);">
+                <div class="form-group mb-20">
+                    <label>Cantidad por envase/caja nueva (Stock Total)</label>
                     <input type="number" min="1" name="stock_total" class="form-control" required placeholder="Ej: 30">
                 </div>
 
-                <div class="form-row-2" style="display: flex; gap: 15px; margin-bottom: 10px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Stock Inicial Actual</label>
+                <div class="form-row-2 mb-10">
+                    <div>
+                        <label class="d-block mb-10 fw-bold">Stock Inicial Actual</label>
                         <input type="number" min="0" name="stock_actual" class="form-control" required placeholder="Ej: 10">
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Alerta Mínima</label>
+                    <div>
+                        <label class="d-block mb-10 fw-bold">Alerta Mínima</label>
                         <input type="number" min="0" name="umbral_stock_minimo" class="form-control" required placeholder="Ej: 5">
                     </div>
                 </div>
-                <small class="text-muted">Emitiremos una alerta en el panel de inicio cuando las existencias queden por debajo de este umbral.</small>
+                <small class="text-muted d-block mt-10">Emitiremos una alerta en el panel de inicio cuando las existencias queden por debajo de este umbral.</small>
             </div>
         </div>
 
         {# ================= BLOQUE 3: HORARIOS Y FRECUENCIA ================= #}
-        <div class="acordeon-item" style="background: white; border-radius: 8px; border: 1px solid #eef2f5; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-            <button type="button" class="acordeon-header" onclick="toggleAcordeon(this)" style="width: 100%; padding: 18px 20px; background: #f8fafc; border: none; text-align: left; font-size: 1.05rem; font-weight: bold; color: var(--azul-profundo); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <span>⏳ 3. Esquema de Horarios y Duración</span>
-                <span class="acordeon-flecha" style="transition: transform 0.2s ease; transform: rotate(-90deg);">▼</span>
+        <div class="card-sobria mb-30 acordeon-item" style="overflow: hidden;">
+            <button type="button" class="acordeon-header d-flex justify-between align-center w-100" onclick="toggleAcordeon(this)" style="padding: 18px 20px; background: var(--gris-claro); border: none; cursor: pointer;">
+                <span class="fs-lg fw-bold" style="color: var(--azul-profundo);">⏳ 3. Esquema de Horarios y Duración</span>
+                <span class="acordeon-flecha" style="transition: var(--transicion); transform: rotate(-90deg);">▼</span>
             </button>
-            <div class="acordeon-content" style="padding: 20px; display: none; border-top: 1px solid #eef2f5;">
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 8px;">Esquema de administración</label>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="acordeon-content" style="padding: 25px; display: none; border-top: 1px solid var(--gris-borde);">
+                <div class="form-group mb-30">
+                    <label>Esquema de administración</label>
+                    <div class="d-flex gap-15" style="flex-wrap: wrap;">
                         <label style="cursor: pointer;"><input type="radio" name="frecuencia_tipo" value="fijo" checked> Horarios Fijos</label>
                         <label style="cursor: pointer;"><input type="radio" name="frecuencia_tipo" value="intervalo"> Por Intervalo</label>
                         <label style="cursor: pointer;"><input type="radio" name="frecuencia_tipo" value="evento"> Con Evento</label>
@@ -95,30 +95,30 @@
                 </div>
 
                 {# Panel FIJO #}
-                <div id="campos-fijo" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--azul-profundo);">
-                    <label style="font-weight: bold; display: block; margin-bottom: 8px; font-size: 0.9rem;">Definir horarios de las tomas</label>
-                    <div id="horarios-container">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="time" name="horario_0" class="form-control" style="width: 140px;">
+                <div id="campos-fijo" class="mb-30" style="background: var(--gris-claro); padding: 15px; border-radius: var(--radio-md); border-left: 4px solid var(--azul-profundo);">
+                    <label class="d-block mb-10 fw-bold">Definir horarios de las tomas</label>
+                    <div id="horarios-container" class="d-flex flex-column gap-10">
+                        <div class="d-flex align-center gap-10">
+                            <input type="time" name="horario_0" class="form-control" style="width: auto;">
                         </div>
                     </div>
-                    <button type="button" onclick="agregarHorario()" style="margin-top: 10px; background: none; border: none; color: var(--azul-profundo); font-weight: bold; cursor: pointer; font-size: 0.85rem; padding: 0;">
+                    <button type="button" onclick="agregarHorario()" style="background: none; border: none; color: var(--azul-profundo); font-weight: bold; cursor: pointer; margin-top: 15px;">
                         ➕ Agregar otro horario
                     </button>
                 </div>
 
                 {# Panel INTERVALO #}
-                <div id="campos-intervalo" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--azul-profundo);">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Cada cuántas horas</label>
+                <div id="campos-intervalo" class="mb-30" style="display: none; background: var(--gris-claro); padding: 15px; border-radius: var(--radio-md); border-left: 4px solid var(--azul-profundo);">
+                    <div class="form-group m-0">
+                        <label>Cada cuántas horas</label>
                         <input type="number" min="1" max="24" name="cada_cuantas_horas" class="form-control" placeholder="Ej: 8">
                     </div>
                 </div>
 
                 {# Panel EVENTO #}
-                <div id="campos-evento" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--azul-profundo);">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Asociar a una rutina diaria</label>
+                <div id="campos-evento" class="mb-30" style="display: none; background: var(--gris-claro); padding: 15px; border-radius: var(--radio-md); border-left: 4px solid var(--azul-profundo);">
+                    <div class="form-group m-0">
+                        <label>Asociar a una rutina diaria</label>
                         <select name="evento_toma" class="form-control">
                             <option value="desayuno">En el Desayuno</option>
                             <option value="almuerzo">En el Almuerzo</option>
@@ -128,26 +128,26 @@
                     </div>
                 </div>
 
-                <h4 style="border-bottom: 1px solid #eee; padding-bottom: 10px; color: var(--azul-profundo); margin-top: 30px;">📅 Duración del Tratamiento</h4>
+                <h4 class="mb-20" style="border-bottom: 1px solid var(--gris-borde); padding-bottom: 10px; color: var(--azul-profundo); margin-top: 30px;">📅 Duración del Tratamiento</h4>
                 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <div style="display: flex; gap: 25px;">
-                        <label style="cursor: pointer;"><input type="radio" name="duracion_tipo" value="permanente" checked> Crónico / Permanente</label>
-                        <label style="cursor: pointer;"><input type="radio" name="duracion_tipo" value="temporal"> Temporal</label>
+                <div class="form-group mb-20">
+                    <div class="d-flex gap-20">
+                        <label style="cursor: pointer;" class="fw-bold"><input type="radio" name="duracion_tipo" value="permanente" checked> Crónico / Permanente</label>
+                        <label style="cursor: pointer;" class="fw-bold"><input type="radio" name="duracion_tipo" value="temporal"> Temporal</label>
                     </div>
                 </div>
 
                 {# Panel FECHA FIN #}
-                <div id="campos-fecha-fin" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #e74c3c;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Fecha límite de finalización</label>
+                <div id="campos-fecha-fin" style="display: none; background: var(--gris-claro); padding: 15px; border-radius: var(--radio-md); border-left: 4px solid #e74c3c;">
+                    <div class="form-group m-0">
+                        <label>Fecha límite de finalización</label>
                         <input type="date" name="fecha_fin" class="form-control">
                     </div>
                 </div>
             </div>
         </div>
 
-        <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 1.05rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <button type="submit" class="btn-primary w-100" style="padding: 16px; font-size: 1.1rem; box-shadow: var(--sombra-media);">
             💾 Registrar Medicamento en el Plan
         </button>
     </form>
@@ -198,44 +198,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const stockActual = parseFloat(stockActualInput?.value) || 0;
             const stockTotal = parseFloat(stockTotalInput?.value) || 0;
 
-            // 1. Bloqueo manual de negativos
             if (dosis < 0 || stockActual < 0 || stockTotal < 0) {
-                e.preventDefault();
-                alert("❌ Error: Ningún valor de stock o dosis puede ser negativo.");
-                return false;
+                e.preventDefault(); alert("❌ Error: Ningún valor de stock o dosis puede ser negativo."); return false;
             }
-
-            // 2. Validación de dosis mínima
             if (dosis <= 0) {
-                e.preventDefault();
-                alert("❌ Error: La dosis debe ser un valor mayor a cero.");
-                return false;
+                e.preventDefault(); alert("❌ Error: La dosis debe ser un valor mayor a cero."); return false;
             }
-
-            // 3. Coherencia dosis vs inventarios
             if (dosis > stockActual) {
-                e.preventDefault();
-                alert(`❌ Error: La dosis (${dosis}) no puede superar al stock actual disponible (${stockActual}).`);
-                return false;
+                e.preventDefault(); alert(`❌ Error: La dosis (${dosis}) no puede superar al stock actual disponible (${stockActual}).`); return false;
             }
             if (dosis > stockTotal) {
-                e.preventDefault();
-                alert(`❌ Error: La dosis (${dosis}) no puede ser mayor que la capacidad total del envase (${stockTotal}).`);
-                return false;
+                e.preventDefault(); alert(`❌ Error: La dosis (${dosis}) no puede ser mayor que la capacidad total del envase (${stockTotal}).`); return false;
             }
-
-            // 4. Límite de horas (1 a 24)
             if (cadaHorasInput && cadaHorasInput.value !== '') {
                 const cadaHoras = parseFloat(cadaHorasInput.value) || 0;
                 if (cadaHoras < 1 || cadaHoras > 24) {
-                    e.preventDefault();
-                    alert("❌ Error: El intervalo de administración debe estar entre 1 y 24 horas.");
-                    cadaHorasInput.focus();
-                    return false;
+                    e.preventDefault(); alert("❌ Error: El intervalo de administración debe estar entre 1 y 24 horas."); cadaHorasInput.focus(); return false;
                 }
             }
         });
     }
 });
 </script>
-{% endblock scripts %}
+{% endblock %}

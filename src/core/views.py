@@ -1,12 +1,13 @@
 import json
 from django.db import models
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django.core.paginator import Paginator
-from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma
+from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma, Notificacion
 from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm
 
 
@@ -91,6 +92,9 @@ def registro(request):
 @login_required
 def dashboard(request):
     perfil, target_user = obtener_paciente_activo(request)
+
+    # Obtenemos las notificaciones no leídas del usuario (sea tutor o paciente)
+    notificaciones = Notificacion.objects.filter(usuario=request.user, leida=False)
     
     # Lista de pacientes para el selector del tutor
     pacientes_list = []
@@ -103,10 +107,11 @@ def dashboard(request):
     # Si el tutor no tiene pacientes asociados todavía
     if not target_user:
         context = {
-    #Cambiado paciente por None, si no tiene pacientes asignados
             'paciente': None,
             'pacientes_list': pacientes_list,
-            'tutor_sin_pacientes': True
+            'tutor_sin_pacientes': True,
+            'notificaciones_pendientes': notificaciones,
+            'cantidad_notificaciones': notificaciones.count()
         }
         return render(request, 'core/dashboard.html', context)
 
@@ -179,7 +184,9 @@ def dashboard(request):
         'controles_permitidos_json': json.dumps(controles_permitidos),
         'pacientes_list':      pacientes_list,
         'datos_grafico_json':  json.dumps(datos_grafico),
-        'tutor_sin_pacientes': False
+        'tutor_sin_pacientes': False,
+        'notificaciones_pendientes': notificaciones,
+        'cantidad_notificaciones': notificaciones.count()
     }
     return render(request, 'core/dashboard.html', context)
 
@@ -339,6 +346,7 @@ def reponer_medicamento(request, medicamento_id):
         
     # Volvemos a la página anterior
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
 @login_required
 def eliminar_medicamento(request, pk):
     if not validar_acceso_tutor(request):
@@ -640,7 +648,6 @@ def cargar_dato_medicion(request, foto_id):
     medicion_existente = DatoMedicion.objects.filter(foto=foto).first()
 
     # 🛡️ BLINDAJE: Si ya fue procesada y NO existe medición (para editar), bloqueamos el acceso
-    # Esto evita que el tutor entre a "cargar" algo que ya se terminó.
     if foto.procesada and not medicion_existente:
         messages.error(request, "⚠️ Este documento ya ha sido procesado.")
         return redirect('fotos_mediciones')
@@ -683,7 +690,7 @@ def cargar_dato_medicion(request, foto_id):
         else:
             medicion = DatoMedicion(paciente=foto.paciente, foto=foto)
 
-# Ajuste en la lógica de guardado:
+        # Ajuste en la lógica de guardado:
         medicion.tipo = tipo
         medicion.valor_1 = val1
         # Si es presión, guarda val2; si no, fuerza a None
@@ -735,6 +742,8 @@ def rechazar_documento(request, foto_id):
 
 @login_required
 def marcar_notif_leidas(request):
+    """Llamada por AJAX para apagar la campanita"""
     if request.method == 'POST':
-        request.session['notif_ultima_lectura'] = timezone.now().isoformat()
-        return render(request, 'core/base.html') # Respuesta dummy exitosa para AJAX
+        Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+        return JsonResponse({'status': 'ok'})
+    return redirect('dashboard')

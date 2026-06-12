@@ -3,6 +3,7 @@
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    
     // --- 1. LÓGICA DE PESTAÑAS (Dashboard) ---
     window.mostrarPestana = function(nombre) {
         document.querySelectorAll('.pestana-content').forEach(s => s.classList.remove('active'));
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nota           = card.dataset.nota       || '';
         const pacienteNombre = card.dataset.paciente   || '';
         const esTutor        = card.dataset.esTutor    === 'true';
+        const esProcesada    = card.dataset.procesada  === 'true';
 
         const modal = document.getElementById('modal-doc');
         if (!modal) return;
@@ -66,17 +68,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const formRechazar = document.getElementById('form-rechazar');
 
         if (esTutor) {
-            btnCargar.href = `/fotos-mediciones/${id}/cargar/`;
-            btnCargar.style.display = (tipo === 'medicion') ? 'inline-flex' : 'none';
-            formAceptar.action = `/fotos-mediciones/${id}/procesar/`;
-            formRechazar.action = `/fotos-mediciones/${id}/rechazar/`;
-            formAceptar.style.display = 'inline';
-            formRechazar.style.display = 'inline';
+            if (!esProcesada) {
+                // Si NO está procesada, mostramos los botones de acción
+                btnCargar.href = `/fotos-mediciones/${id}/cargar/`;
+                btnCargar.style.display = (tipo === 'medicion') ? 'inline-flex' : 'none';
+                formAceptar.action = `/fotos-mediciones/${id}/procesar/`;
+                formRechazar.action = `/fotos-mediciones/${id}/rechazar/`;
+                formAceptar.style.display = 'inline';
+                formRechazar.style.display = 'inline';
+            } else {
+                // 🛡️ Si YA está procesada, escondemos todo para que solo pueda "Ver" la foto
+                btnCargar.style.display = 'none';
+                formAceptar.style.display = 'none';
+                formRechazar.style.display = 'none';
+            }
         } else {
+            // Si es paciente (no es tutor), escondemos todo
             btnCargar.style.display = 'none';
             formAceptar.style.display = 'none';
             formRechazar.style.display = 'none';
         }
+        
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     };
@@ -87,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // --- 4. CONFIGURACIÓN DINÁMICA (Radio Buttons de frecuencia) ---
-    // Guard: solo ejecutar si estamos en la página de medicamentos
     const camposFijo = document.getElementById('campos-fijo');
     if (camposFijo) {
         const radiosFrecuencia = document.querySelectorAll('input[name="frecuencia_tipo"]');
@@ -113,4 +124,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const cantidad = grid.querySelectorAll('.shortcut-btn').length;
         grid.style.gridTemplateColumns = 'repeat(' + cantidad + ', 1fr)';
     }
+
+    // --- 7. NOTIFICACIONES (Campanita AJAX) ---
+    const btnCampanita = document.getElementById('btn-campanita');
+    const dropdownNotif = document.getElementById('dropdown-notif');
+    const badgeNotif = document.getElementById('badge-notif');
+
+    if (btnCampanita && dropdownNotif) {
+        btnCampanita.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const estaOculto = dropdownNotif.style.display === 'none';
+            dropdownNotif.style.display = estaOculto ? 'block' : 'none';
+
+            // Si se abre el menú y hay alertas rojas, avisamos al servidor que ya se vieron
+            if (estaOculto && badgeNotif) {
+                fetch('/notificaciones/marcar-leidas/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if(response.ok) {
+                        badgeNotif.style.display = 'none'; // Desaparece el número rojo
+                    }
+                }).catch(error => console.error("Error al marcar notificaciones:", error));
+            }
+        });
+
+        // Cerrar menú si hacés clic en cualquier otra parte de la pantalla
+        document.addEventListener('click', function(e) {
+            if (!btnCampanita.contains(e.target) && !dropdownNotif.contains(e.target)) {
+                dropdownNotif.style.display = 'none';
+            }
+        });
+    }
+
+    // Helper para rescatar el token de seguridad de Django
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
 });

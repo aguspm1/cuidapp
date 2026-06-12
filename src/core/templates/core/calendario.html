@@ -5,48 +5,49 @@
 <main class="main-content">
     <div class="card-sobria" style="border-top: 6px solid var(--azul-profundo); padding: 40px;">
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div class="d-flex justify-between align-center mb-30" style="flex-wrap: wrap; gap: 20px;">
             <div>
-                <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ paciente.get_full_name|default:paciente.username }}</h2>
-                <p style="margin: 8px 0 0; color: #666; font-size: 1.05rem;">Gestioná turnos médicos y eventos familiares</p>
+                <h2 class="m-0" style="color: var(--azul-profundo); font-size: 1.7rem;">📅 Calendario de {{ paciente.get_full_name|default:paciente.username }}</h2>
+                <p class="m-0 mt-10 text-muted fs-lg">Gestioná turnos médicos y eventos familiares</p>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="d-flex gap-15 align-center">
                 {% if usuario_es_tutor %}
-                <a href="{% url 'nuevo_evento' %}" class="btn-primary" style="padding: 12px 22px; text-decoration: none; font-size: 0.95rem; width: auto; border-radius: 8px;">
+                <a href="{% url 'nuevo_evento' %}" class="btn-primary w-auto">
                     + Agregar Evento
                 </a>
                 {% endif %}
-                <a href="{% url 'dashboard' %}" style="text-decoration:none; color:var(--azul-profundo); font-weight:bold; font-size:1.1rem; display:block; margin-bottom:30px;">
+                <a href="{% url 'dashboard' %}" class="btn-cancelar w-auto">
                      ← Volver al Dashboard
                 </a>
             </div>
         </div>
 
-        <div id="calendar-full" style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--gris-borde); min-height: 700px;"></div>
+        <div id="calendar-full" style="background: white; padding: 20px; border-radius: var(--radio-lg); border: 1px solid var(--gris-borde); min-height: 700px;"></div>
     </div>
 </main>
 
 {# Modal para ver, editar y eliminar un evento #}
-<div id="modal-evento" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
-    <div class="card-sobria" style="padding: 35px; max-width: 460px; width: 90%;">
-        <h3 id="modal-titulo" style="margin: 0 0 15px; color: var(--azul-profundo); font-size: 1.3rem;"></h3>
-        <p id="modal-lugar" style="color: #666; margin: 0 0 8px; font-size: 1rem;"></p>
-        <p id="modal-fecha" style="color: #999; margin: 0 0 25px; font-size: 0.95rem;"></p>
+<div id="modal-evento" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 460px;">
+        <h3 id="modal-titulo" class="mb-15 m-0" style="color: var(--azul-profundo); font-size: 1.4rem;"></h3>
+        <p id="modal-lugar" class="m-0 mb-10 text-muted fs-lg"></p>
+        <p id="modal-fecha" class="m-0 mb-30 text-muted"></p>
 
         {% if usuario_es_tutor %}
-        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-            <a id="btn-editar-evento" href="#" class="btn-primary" style="flex: 1; text-decoration: none; text-align: center; padding: 12px; font-size: 0.95rem; background: #f39c12;">
+        <div class="d-flex gap-15 mb-20">
+            <a id="btn-editar-evento" href="#" class="btn-primary" style="background: #f39c12;">
                 ✏️ Editar
             </a>
-            <form id="form-eliminar" method="POST" style="flex: 1;">
+            <form id="form-eliminar" method="POST" class="w-100">
                 {% csrf_token %}
-                <button type="submit" class="btn-reject" style="width: 100%; padding: 12px; font-size: 0.95rem;">
+                <button type="submit" class="btn-primary" style="background: #e74c3c;">
                     🗑 Eliminar
                 </button>
             </form>
         </div>
         {% endif %}
-        <button onclick="cerrarModal()" style="width: 100%; padding: 12px; font-size: 0.95rem; background: transparent; color: var(--azul-profundo); border: 2px solid var(--azul-profundo); border-radius: 8px; font-weight: 700; cursor: pointer;">
+        
+        <button onclick="cerrarModal()" class="btn-cancelar w-100" style="color: var(--azul-profundo); border: 2px solid var(--azul-profundo); background: transparent;">
             Cerrar
         </button>
     </div>
@@ -67,11 +68,8 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const calendarEl = document.getElementById('calendar-full');
-
-        // Lee los eventos directamente del contexto Django (eventos_json es un string JSON)
         const eventosRaw = {{ eventos_json|safe }};
 
-        // Mapea colores y extendedProps que la view no incluye
         const eventos = eventosRaw.map(function(ev) {
             const colores = { medico: '#2b6cb0', social: '#38a169', actividad: '#d97706' };
             return {

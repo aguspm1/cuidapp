@@ -5,45 +5,44 @@
 <main class="main-content">
     <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
 
-    <div class="tutor-profile-container">
+    <div style="max-width: 1000px; margin: 0 auto;">
         
-        {# Datos del Tutor #}
-        <div class="card-sobria tutor-header-card">
-            <div class="tutor-avatar">{{ user.first_name|slice:":1"|upper }}</div>
-            <div class="tutor-info">
-                <h2>👤 Mi Perfil</h2>
-                <p>{{ user.first_name }} {{ user.last_name }}</p>
-                <p class="detail">{{ user.email }}</p>
-                <p class="date">Miembro desde {{ user.date_joined|date:"d/m/Y" }}</p>
+        {# Datos del Tutor (Reutilizando las clases del perfil del paciente) #}
+        <div class="card-sobria profile-header-card mb-30">
+            <div class="profile-avatar-large">
+                {{ user.first_name|slice:":1"|upper }}
+            </div>
+            <div class="profile-header-info">
+                <h2 class="m-0" style="color: var(--azul-profundo);">👤 Mi Perfil</h2>
+                <p class="m-0 mt-10 fs-lg fw-bold">{{ user.first_name }} {{ user.last_name }}</p>
+                <p class="m-0 text-muted">{{ user.email }}</p>
+                <p class="m-0 mt-10 fs-sm text-muted">Miembro desde {{ user.date_joined|date:"d/m/Y" }}</p>
             </div>
         </div>
 
         {# Pacientes Vinculados #}
-        <div class="card-sobria" style="padding: 40px;">
-            <h3 style="color: var(--azul-profundo); margin-bottom: 25px; font-size: 1.5rem;">👥 Pacientes Vinculados</h3>
+        <div class="card-sobria profile-section-card mb-30">
+            <h3 class="form-section-title mb-30">👥 Pacientes Vinculados</h3>
             
             {% if pacientes %}
-                <div class="patients-list">
+                <div class="d-flex flex-column gap-15">
                     {% for paciente in pacientes %}
-                    <div class="patient-item">
-                        <div class="patient-info">                            
-                            <p class="patient-info-type">
-                                <span class="patient-type-badge">Paciente</span>
-                            </p>
-                            <p class="patient-info-name">
+                    <div class="card-sobria d-flex justify-between align-center" style="padding: 20px; border-left: 5px solid var(--celeste-neon); border-radius: var(--radio-md); background: #f8fafc; box-shadow: none; border-top: 1px solid var(--gris-borde); border-right: 1px solid var(--gris-borde); border-bottom: 1px solid var(--gris-borde);">
+                        <div>                            
+                            <p class="m-0 mb-10"><span class="badge-paciente" style="margin: 0; padding: 4px 10px; font-size: 0.8rem;">Paciente</span></p>
+                            <p class="m-0 fw-bold fs-lg" style="color: var(--azul-profundo);">
                                 {{ paciente.user.first_name }} {{ paciente.user.last_name }}
                             </p>
-
-                            <p class="patient-info-user">
+                            <p class="m-0 text-muted fs-sm mt-10">
                                 Usuario: {{ paciente.user.username }}
                             </p>
                         </div>
                         
-                        <div class="patient-actions">
-                            <a href="{% url 'seleccionar_paciente' paciente.user.id %}" class="btn-primary" style="text-decoration: none; background: var(--celeste-neon); padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                        <div class="d-flex gap-10">
+                            <a href="{% url 'seleccionar_paciente' paciente.user.id %}" class="btn-primary w-auto">
                                 Seleccionar
                             </a>
-                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.user.id }}" class="btn-outline-white" style="text-decoration: none; padding: 10px 15px; font-size: 0.9rem; white-space: nowrap;">
+                            <a href="{% url 'perfil_paciente' %}?id={{ paciente.user.id }}" class="btn-cancelar w-auto">
                                 Ver Perfil
                             </a>
                         </div>
@@ -51,17 +50,17 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="no-patients">
+                <div class="empty-state">
                     <p>📭 No hay pacientes vinculados aún</p>
-                    <p>Ve a <a href="{% url 'vincular_paciente' %}">Vincular</a> para agregar un paciente</p>
+                    <p class="text-muted mt-10">Ve a <a href="{% url 'vincular_paciente' %}" style="color: var(--azul-profundo); font-weight: bold;">Vincular</a> para agregar un paciente.</p>
                 </div>
             {% endif %}
         </div>
 
         {# Botón Vincular Nuevo #}
         {% if pacientes %}
-        <div class="tutor-actions">
-            <a href="{% url 'vincular_paciente' %}" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 10px 20px; font-size: 0.9rem; width: auto;">
+        <div class="d-flex justify-center mt-20">
+            <a href="{% url 'vincular_paciente' %}" class="btn-primary w-auto">
                 + Vincular Otro Paciente
             </a>
         </div>

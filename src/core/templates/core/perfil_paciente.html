@@ -8,18 +8,18 @@
     <div style="max-width: 1000px; margin: 0 auto;">
         
         {# Encabezado del paciente #}
-        <div class="card-sobria profile-header-card">
+        <div class="card-sobria profile-header-card mb-30">
             <div class="profile-avatar-large">
                 {{ paciente.first_name|slice:":1"|upper }}
             </div>
             <div class="profile-header-info">
-                <h2 style="margin: 0; color: var(--azul-profundo); font-size: 1.8rem;">{{ paciente.first_name }} {{ paciente.last_name }}</h2>
-                <p style="margin: 5px 0; color: #666; font-size: 1.1rem;">{{ paciente.username }}</p>
-                <span class="badge-paciente">Paciente</span>
+                <h2 class="m-0" style="color: var(--azul-profundo); font-size: 1.8rem;">{{ paciente.first_name }} {{ paciente.last_name }}</h2>
+                <p class="m-0 mt-10 text-muted" style="font-size: 1.1rem;">{{ paciente.username }}</p>
+                <span class="badge-paciente mt-10" style="margin-top: 10px;">Paciente</span>
             </div>
             {% if usuario_es_tutor %}
             <div>
-                <a href="{% url 'editar_perfil' paciente.id %}" class="btn-editar-perfil">
+                <a href="{% url 'editar_perfil' paciente.id %}" class="btn-primary w-auto d-flex align-center gap-10" style="background: #ffc107; color: #333;">
                     ✏️ Editar Perfil
                 </a>
             </div>
@@ -32,21 +32,21 @@
                 <h3 class="form-section-title">📋 Datos Personales</h3>
                 
                 {% if perfil.fecha_nacimiento %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">Fecha de Nacimiento:</label>
                     <p class="data-value">{{ perfil.fecha_nacimiento|date:"d/m/Y" }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.grupo_sanguineo %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">Grupo Sanguíneo:</label>
                     <p class="data-value">{{ perfil.grupo_sanguineo }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.alergias %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">⚠️ Alergias:</label>
                     <p class="data-alert">{{ perfil.alergias }}</p>
                 </div>
@@ -58,21 +58,21 @@
                 <h3 class="form-section-title">🚨 Emergencia</h3>
                 
                 {% if perfil.contacto_emergencia %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">Contacto:</label>
                     <p class="data-value">{{ perfil.contacto_emergencia }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.telefono_emergencia %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">Teléfono:</label>
                     <p class="data-value">{{ perfil.telefono_emergencia }}</p>
                 </div>
                 {% endif %}
 
                 {% if perfil.medico_cabecera %}
-                <div class="form-group">
+                <div class="form-group mb-10">
                     <label class="data-label">Médico de Cabecera:</label>
                     <p class="data-value">{{ perfil.medico_cabecera }}</p>
                 </div>
@@ -110,18 +110,18 @@
             <h3 class="form-section-title">📊 Controles Requeridos</h3>
             <div class="profile-grid-3">
                 <div class="control-card {% if perfil.requiere_control_presion %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Presión Arterial</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_presion %}✓ Sí{% else %}✗ No{% endif %}</p>
+                    <p class="fs-sm mb-10">Presión Arterial</p>
+                    <p class="m-0 fs-lg fw-bold">{% if perfil.requiere_control_presion %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
 
                 <div class="control-card {% if perfil.requiere_control_glucosa %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Glucosa</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_glucosa %}✓ Sí{% else %}✗ No{% endif %}</p>
+                    <p class="fs-sm mb-10">Glucosa</p>
+                    <p class="m-0 fs-lg fw-bold">{% if perfil.requiere_control_glucosa %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
 
                 <div class="control-card {% if perfil.requiere_control_peso %}control-si{% else %}control-no{% endif %}">
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Peso</p>
-                    <p style="font-size: 1.5rem; font-weight: bold;">{% if perfil.requiere_control_peso %}✓ Sí{% else %}✗ No{% endif %}</p>
+                    <p class="fs-sm mb-10">Peso</p>
+                    <p class="m-0 fs-lg fw-bold">{% if perfil.requiere_control_peso %}✓ Sí{% else %}✗ No{% endif %}</p>
                 </div>
             </div>
         </div>

@@ -37,12 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_apscheduler',
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
     'core',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -148,3 +151,5 @@ REST_FRAMEWORK = {
 # Habilitar el permiso para el desarrollo local
 
 ALLOWED_HOSTS = ['*']
+
+CORS_ALLOW_ALL_ORIGINS = True

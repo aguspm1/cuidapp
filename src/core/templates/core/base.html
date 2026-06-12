@@ -11,73 +11,63 @@
 
     <header class="main-header">
         <div class="header-container">
-            <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; text-decoration: none;">
-        <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
-        <h1 class="logo-texto">Cuida APP</h1>
-    </a>
+            <a href="{% url 'dashboard' %}" class="d-flex align-center" style="text-decoration: none;">
+                <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" class="logo-imagen">
+                <h1 class="logo-texto">Cuida APP</h1>
+            </a>
 
             <nav class="nav-principal">
       
                 {% if user.is_authenticated %}
-                    {# usuario_es_tutor viene del context processor — disponible en todos los templates #}
                     {% if usuario_es_tutor %}
                         <a href="{% url 'perfil_tutor' %}">👤 Mi Perfil</a>
                     {% else %}
                         <a href="{% url 'perfil_paciente' %}">👤 Mi Perfil</a>
                     {% endif %}
 
-                    <!-- CAMPANITA DE NOTIFICACIONES -->
                     <div class="notif-bell-wrapper" id="notif-bell-wrapper">
                         <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifPanel()" title="Notificaciones">
-    🔔Notificaciones
-    {% if notif_count and notif_count > 0 %}
-        <span class="notif-badge" id="notif-badge">{{ notif_count }}</span>
-    {% endif %}
-</button>
+                            🔔 Notificaciones
+                            {% if cantidad_notificaciones and cantidad_notificaciones > 0 %}
+                                <span class="notif-badge" id="notif-badge">{{ cantidad_notificaciones }}</span>
+                            {% endif %}
+                        </button>
+                        
                         <div class="notif-panel" id="notif-panel">
                             <div class="notif-panel-header">
                                 <strong>Notificaciones</strong>
                             </div>
                             <div class="notif-panel-body">
-                                {% if tomas_notif %}
-                                <div class="notif-section-title">💊 Tomas recientes (últimas 24 hs)</div>
-                                {% for toma in tomas_notif %}
-                                <div class="notif-item notif-toma {% if forloop.counter <= tomas_nuevas_count %}notif-toma-nueva{% endif %}">
-                                    <span class="notif-item-icon">✅</span>
-                                    <div class="notif-item-text">
-                                        <strong>{{ toma.paciente.first_name }} tomó {{ toma.medicamento.nombre }}</strong>
-                                        <small>{{ toma.fecha_hora|date:"d/m H:i" }} hs — {{ toma.cantidad_tomada }} {{ toma.medicamento.unidad_medida }}</small>
+                                
+                                {% if notificaciones_pendientes %}
+                                    {% for notif in notificaciones_pendientes %}
+                                    <div class="notif-item">
+                                        <span class="notif-item-icon">
+                                            {% if notif.tipo == 'medicacion' %}💊
+                                            {% elif notif.tipo == 'evento' %}📅
+                                            {% else %}🔔{% endif %}
+                                        </span>
+                                        <div class="notif-item-text">
+                                            <strong>{{ notif.titulo }}</strong>
+                                            <small>{{ notif.mensaje }}</small>
+                                            <small class="text-muted fs-sm d-block mt-10">
+                                                {{ notif.fecha_creacion|date:"d/m/Y - H:i" }}
+                                            </small>
+                                        </div>
                                     </div>
-                                    {% if forloop.counter <= tomas_nuevas_count %}<span class="notif-nueva-dot"></span>{% endif %}
-                                </div>
-                                {% endfor %}
-                                {% endif %}
-
-                                {% if stock_notif %}
-                                <div class="notif-section-title">⚠️ Stock bajo</div>
-                                {% for med in stock_notif %}
-                                <div class="notif-item notif-warning">
-                                    <span class="notif-item-icon">⚠️</span>
-                                    <div class="notif-item-text">
-                                        <strong>{{ med.nombre }}</strong>
-                                        <small>Quedan {{ med.tomas_restantes }} toma{{ med.tomas_restantes|pluralize }}</small>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="notif-empty">
+                                        <span>✅</span>
+                                        <small>Sin notificaciones nuevas</small>
                                     </div>
-                                </div>
-                                {% endfor %}
-                                {% endif %}
-
-                                {% if not tomas_notif and not stock_notif %}
-                                <div class="notif-empty">
-                                    <span>✅</span>
-                                    <small>Sin notificaciones</small>
-                                </div>
                                 {% endif %}
 
                             </div>
                         </div>
                     </div>
 
-                    <form action="{% url 'logout' %}" method="post" class="form-inline">
+                    <form action="{% url 'logout' %}" method="post" class="form-inline m-0">
                         {% csrf_token %}
                         <button type="submit" class="btn-salir">Cerrar Sesión</button>
                     </form>
@@ -101,7 +91,7 @@
     {% block content %}
     {% endblock %}
 
-    <footer style="text-align: center; padding: 35px; color: #999; font-size: 0.95rem; background: #f8fafc; margin-top: 50px;">
+    <footer class="text-center text-muted" style="padding: 35px; background: var(--gris-claro); margin-top: 50px;">
         &copy; 2026 Cuida APP - Proyecto IFTS 18
     </footer>
 
@@ -116,6 +106,7 @@
             setTimeout(function() { el.remove(); }, 500);
         });
     }, 4000);
+    
     // warnings y errores duran más
     setTimeout(function() {
         document.querySelectorAll('.mensaje-alerta.warning, .mensaje-alerta.error').forEach(function(el) {
@@ -130,22 +121,21 @@
         if (!panel) return;
         var abriendo = !panel.classList.contains('show');
         panel.classList.toggle('show');
-        // Al abrir: marcar como leídas
+        
+        // Al abrir: marcar como leídas enviando el AJAX a la base de datos
         if (abriendo) {
             fetch('{% url "marcar_notif_leidas" %}', {
                 method: 'POST',
                 headers: {'X-CSRFToken': '{{ csrf_token }}'},
-            }).then(function() {
-                // Limpiar badge
-                var badge = document.getElementById('notif-badge');
-                if (badge) badge.remove();
-                // Quitar highlight de tomas nuevas
-                document.querySelectorAll('.notif-toma-nueva').forEach(function(el) {
-                    el.classList.remove('notif-toma-nueva');
-                });
+            }).then(function(response) {
+                if (response.ok) {
+                    var badge = document.getElementById('notif-badge');
+                    if (badge) badge.remove();
+                }
             });
         }
     }
+    
     // Cerrar panel al clickear afuera
     document.addEventListener('click', function(e) {
         var wrapper = document.getElementById('notif-bell-wrapper');

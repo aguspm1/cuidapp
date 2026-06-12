@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from core.models import PerfilPaciente, Medicamento, EventoCalendario
+from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento
+
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,3 +37,21 @@ class EventoCalendarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventoCalendario
         fields = ['id', 'titulo', 'fecha_hora', 'tipo', 'lugar', 'descripcion']
+
+class NotificacionSerializer(serializers.ModelSerializer):
+    # Agregamos este campo extra para que Flutter reciba el texto legible (ej: "Recordatorio de Toma")
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+
+    class Meta:
+        model = Notificacion
+        fields = [
+            'id', 'tipo', 'tipo_display', 'titulo', 'mensaje', 
+            'leida', 'fecha_creacion', 'referencia_id'
+        ]
+
+class FotoDocumentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FotoDocumento
+        fields = ['id', 'tipo', 'imagen', 'nota_paciente', 'fecha_subida', 'procesada']
+        # Protegemos estos campos para que Flutter no los pueda sobreescribir por error
+        read_only_fields = ['fecha_subida', 'procesada']

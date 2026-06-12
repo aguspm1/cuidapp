@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block content %}
-<main class="main-content auth-container" style="padding: 40px 20px;">
+<main class="main-content auth-container">
     <div class="card-sobria auth-card auth-card-wide">
 
-        <div style="text-align: center; margin-bottom: 35px;">
-            <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" style="height: 55px; margin-bottom: 15px;">
-            <h2 class="card-title" style="margin-bottom: 5px;">Crear Cuenta</h2>
-            <p style="color: #666; font-size: 1rem;">Completá los datos para registrarte</p>
+        <div class="text-center mb-30">
+            <img src="{% static 'core/img/minilogo.png' %}" alt="Cuida APP" height="55" class="mb-10">
+            <h2 class="card-title m-0">Crear Cuenta</h2>
+            <p class="text-muted mt-10">Completá los datos para registrarte</p>
         </div>
 
         <form method="POST" class="auth-form-django">
@@ -22,61 +22,56 @@
             </div>
             {% endif %}
 
-            {# Nombre de usuario #}
             <div class="form-group">
                 <label>👤 Nombre de usuario</label>
                 {{ form.username }}
-                <small style="color: #666; font-size: 0.85rem;">
+                <small class="text-muted fs-sm d-flex mt-10">
                     ⚠️ Anotá este nombre — si sos paciente, tu tutor lo necesita para vincularte.
                 </small>
                 {% if form.username.errors %}
-                <div class="errorlist">{{ form.username.errors }}</div>
+                <div class="errorlist mt-10">{{ form.username.errors }}</div>
                 {% endif %}
             </div>
 
-            {# Email #}
             <div class="form-group">
                 <label>✉️ Email</label>
                 {{ form.email }}
                 {% if form.email.errors %}
-                <div class="errorlist">{{ form.email.errors }}</div>
+                <div class="errorlist mt-10">{{ form.email.errors }}</div>
                 {% endif %}
             </div>
 
-            {# Nombre y Apellido #}
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label>Nombre</label>
+            <div class="form-row-2 mb-20">
+                <div>
+                    <label class="fw-bold mb-10 d-flex">Nombre</label>
                     {{ form.first_name }}
                 </div>
-                <div class="form-group">
-                    <label>Apellido</label>
+                <div>
+                    <label class="fw-bold mb-10 d-flex">Apellido</label>
                     {{ form.last_name }}
                 </div>
             </div>
 
-            {# Contraseñas #}
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label>🔒 Contraseña</label>
+            <div class="form-row-2 mb-20">
+                <div>
+                    <label class="fw-bold mb-10 d-flex">🔒 Contraseña</label>
                     {{ form.password1 }}
                     {% if form.password1.errors %}
-                    <div class="errorlist">{{ form.password1.errors }}</div>
+                    <div class="errorlist mt-10">{{ form.password1.errors }}</div>
                     {% endif %}
                 </div>
-                <div class="form-group">
-                    <label>🔒 Confirmación</label>
+                <div>
+                    <label class="fw-bold mb-10 d-flex">🔒 Confirmación</label>
                     {{ form.password2 }}
                     {% if form.password2.errors %}
-                    <div class="errorlist">{{ form.password2.errors }}</div>
+                    <div class="errorlist mt-10">{{ form.password2.errors }}</div>
                     {% endif %}
                 </div>
             </div>
 
-            {# Selector de rol — estilizado #}
             <div class="form-group">
                 <label>¿Cuál es tu rol?</label>
-                <div class="rol-selector">
+                <div class="rol-selector mt-10">
                     <label class="rol-card">
                         <input type="radio" name="rol" value="paciente" required>
                         <div class="rol-card-content">
@@ -96,86 +91,14 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-primary" style="margin-top: 10px;">
+            <button type="submit" class="btn-primary mt-10">
                 Crear Cuenta →
             </button>
         </form>
 
-        <div class="auth-footer">
-            ¿Ya tenés cuenta? <a href="{% url 'login' %}" class="link-neon">Iniciá sesión</a>
+        <div class="auth-footer text-center mt-30 text-muted" style="border-top: 1px solid var(--gris-borde); padding-top: 25px;">
+            ¿Ya tenés cuenta? <a href="{% url 'login' %}" style="color: var(--celeste-neon); font-weight: bold; text-decoration: none;">Iniciá sesión</a>
         </div>
     </div>
 </main>
-
-<style>
-.auth-card-wide {
-    max-width: 680px !important;
-}
-
-.rol-selector {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-top: 5px;
-}
-
-.rol-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    border: 2px solid var(--gris-borde);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: white;
-    text-align: center;
-}
-
-.rol-card:has(input:checked) {
-    border-color: var(--azul-profundo);
-    background: #e8f0fe;
-}
-
-.rol-card input[type="radio"] {
-    display: none;
-}
-
-.rol-card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
-
-.rol-icon {
-    font-size: 2rem;
-    margin-bottom: 5px;
-}
-
-.rol-nombre {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--azul-profundo);
-}
-
-.rol-desc {
-    font-size: 0.85rem;
-    color: #666;
-}
-
-.auth-footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #666;
-    font-size: 0.95rem;
-    padding-top: 25px;
-    border-top: 1px solid var(--gris-borde);
-}
-
-@media (max-width: 600px) {
-    .rol-selector { grid-template-columns: 1fr; }
-    .form-row-2 { grid-template-columns: 1fr; }
-}
-</style>
 {% endblock %}

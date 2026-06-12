@@ -197,3 +197,30 @@ class EventoCalendario(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.fecha_hora.date()}"
+    
+# ============================================================
+# 5. NOTIFICACIONES
+# ============================================================
+
+class Notificacion(models.Model):
+    TIPO_CHOICES = [
+        ('medicacion', 'Recordatorio de Toma'),
+        ('evento', 'Evento Próximo'),
+        ('sistema', 'Aviso del Sistema'),
+    ]
+
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificaciones')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='sistema')
+    titulo = models.CharField(max_length=150)
+    mensaje = models.TextField()
+    leida = models.BooleanField(default=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # Campo clave para evitar notificaciones duplicadas
+    referencia_id = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"[{self.get_tipo_display()}] {self.titulo} - {self.usuario.username}"

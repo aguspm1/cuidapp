@@ -2,10 +2,10 @@
 {% load static %}
 
 {% block content %}
-<div class="auth-container">
+<main class="main-content auth-container">
     <div class="card-sobria auth-card">
-        <h2 class="card-title">📅 Agendar Nuevo Evento</h2>
-        <p class="text-muted text-center" style="margin-bottom: 25px;">
+        <h2 class="card-title text-center m-0">📅 Agendar Nuevo Evento</h2>
+        <p class="text-muted text-center mt-10 mb-30">
             Completá los datos para que aparezcan en el calendario de <strong>{{ paciente.get_full_name|default:paciente.username }}</strong>.
         </p>
 
@@ -18,14 +18,14 @@
                 </div>
             {% endif %}
             
-            <div class="form-group">
+            <div class="form-group mb-20">
                 <label>Título del Evento</label>
                 <input type="text" name="titulo" class="form-control" placeholder="Ej: Turno con Cardiólogo" required>
             </div>
 
-            <div class="form-row-2">
-                <div class="form-group">
-                    <label>Tipo de Evento</label>
+            <div class="form-row-2 mb-20">
+                <div>
+                    <label class="fw-bold mb-10 d-block">Tipo de Evento</label>
                     <select name="tipo" class="form-control" required>
                         <option value="medico">🩺 Médico / Turno</option>
                         <option value="social">👥 Visita / Social</option>
@@ -33,27 +33,27 @@
                         <option value="otro">📌 Otro</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Fecha y Hora</label>
+                <div>
+                    <label class="fw-bold mb-10 d-block">Fecha y Hora</label>
                     <input type="datetime-local" name="fecha_hora" class="form-control" required>
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group mb-20">
                 <label>Lugar / Dirección</label>
                 <input type="text" name="lugar" class="form-control" placeholder="Ej: Clínica Santa Lucía">
             </div>
 
-            <div class="form-group">
+            <div class="form-group mb-30">
                 <label>Notas adicionales</label>
                 <textarea name="descripcion" rows="4" class="form-control" placeholder="Ej: Llevar estudios previos..."></textarea>
             </div>
 
-            <div class="form-actions-container">
+            <div class="d-flex gap-15">
                 <button type="submit" class="btn-primary">Guardar en Agenda</button>
                 <a href="{% url 'calendario' %}" class="btn-cancelar">Cancelar</a>
             </div>
         </form>
     </div>
-</div>
+</main>
 {% endblock %}

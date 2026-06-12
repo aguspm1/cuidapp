@@ -3,10 +3,10 @@
 
 {% block content %}
 <main class="main-content">
-    <div class="card-sobria">
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-            <a href="{% url 'dashboard' %}" class="btn-mini-text" style="font-size: 0.85rem; padding: 8px 14px;">← Volver</a>
-            <h2 style="margin: 0;">
+    <div class="card-sobria" style="padding: 30px;">
+        <div class="d-flex align-center gap-15 mb-20" style="flex-wrap: wrap;">
+            <a href="{% url 'dashboard' %}" class="btn-cancelar w-auto" style="padding: 8px 14px; font-size: 0.85rem;">← Volver</a>
+            <h2 class="m-0">
                 📋 Historial de Tomas
                 {% if medicamento_nombre %}
                     — <span style="color: var(--azul-profundo);">{{ medicamento_nombre }}</span>
@@ -15,9 +15,9 @@
         </div>
 
         {% if medicamento_nombre %}
-        <div style="background: #f0faff; border: 1px solid var(--celeste-neon); border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; font-size: 0.9rem; color: #0369a1;">
-            Mostrando tomas del medicamento: <strong>{{ medicamento_nombre }}</strong>
-            &nbsp;·&nbsp; <a href="{% url 'historial_tomas' %}" style="color: var(--azul-profundo);">Ver historial completo</a>
+        <div class="mb-20" style="background: #f0faff; border: 1px solid var(--celeste-neon); border-radius: var(--radio-md); padding: 10px 16px; font-size: 0.9rem; color: var(--azul-profundo);">
+            Mostrando tomas del medicamento: <strong style="color: #0369a1;">{{ medicamento_nombre }}</strong>
+            &nbsp;·&nbsp; <a href="{% url 'historial_tomas' %}" style="color: var(--azul-profundo); font-weight: bold; text-decoration: none;">Ver historial completo</a>
         </div>
         {% endif %}
 

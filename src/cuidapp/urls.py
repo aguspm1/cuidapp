@@ -51,6 +51,10 @@ urlpatterns = [
     path('api/v1/me/', api_views.me, name='api_me'),
     path('api/v1/medicamentos/', api_views.mis_medicamentos, name='api_medicamentos'),
     path('api/v1/eventos/', api_views.mis_eventos, name='api_eventos'),
+    path('api/v1/notificaciones/', api_views.mis_notificaciones, name='api_notificaciones'),
+    path('api/v1/notificaciones/marcar-leidas/', api_views.marcar_notificaciones_api, name='api_notificaciones_leidas'),
+    path('api/medicamentos/<int:medicamento_id>/registrar-toma/', api_views.registrar_toma_api, name='api_registrar_toma'),
+    path('api/documentos/subir/', api_views.subir_foto_api, name='api_subir_foto'),
 
 # Sirve archivos de media (imágenes/PDFs subidos) en modo desarrollo
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

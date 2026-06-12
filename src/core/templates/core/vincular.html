@@ -5,36 +5,28 @@
 <main class="main-content">
     <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
  
-    <div class="card-sobria vincular-container">
-        <h2 class="vincular-title">👥 Vincular Paciente</h2>
-        <p class="vincular-description">
-            Ingresá el <strong>nombre de usuario</strong> de la persona que vas a cuidar para ver su medicación y turnos.
-        </p>
+    <div class="card-sobria auth-card" style="margin: 0 auto;">
+        <div class="text-center mb-20">
+            <h2 class="m-0" style="color: var(--azul-profundo);">👥 Vincular Paciente</h2>
+            <p class="text-muted mt-10">
+                Ingresá el <strong>nombre de usuario</strong> de la persona que vas a cuidar para ver su medicación y turnos.
+            </p>
+        </div>
  
         <form method="POST">
             {% csrf_token %}
             
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="{% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
-                        {{ message.message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-            
-            <div class="form-group-vincular">
-                <label for="username_paciente" class="form-label-vincular">
-                    Nombre de usuario del paciente
-                </label>
+            <div class="form-group mb-20">
+                <label for="username_paciente">Nombre de usuario del paciente</label>
                 <input type="text" 
                        name="username_paciente" 
                        id="username_paciente" 
-                       class="input-vincular"
+                       class="form-control"
                        placeholder="Ej: agustin2026" 
                        required>
             </div>
  
-            <button type="submit" class="btn-primary" style="padding: 12px 28px; font-size: 0.95rem; width: auto; border: none; cursor: pointer; margin-top: 8px;">Vincular Cuenta</button>
+            <button type="submit" class="btn-primary mt-10">Vincular Cuenta</button>
         </form>
     </div>
  
