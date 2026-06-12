@@ -3,6 +3,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views
+from core import api_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
  
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -42,6 +44,13 @@ urlpatterns = [
     path('fotos-mediciones/<int:foto_id>/cargar/', views.cargar_dato_medicion, name='cargar_dato'),
     path('fotos-mediciones/<int:foto_id>/procesar/', views.procesar_documento, name='procesar_documento'),
     path('fotos-mediciones/<int:foto_id>/rechazar/', views.rechazar_documento, name='rechazar_documento'),
- 
+
+# URLs para la API
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/v1/me/', api_views.me, name='api_me'),
+    path('api/v1/medicamentos/', api_views.mis_medicamentos, name='api_medicamentos'),
+    path('api/v1/eventos/', api_views.mis_eventos, name='api_eventos'),
+
 # Sirve archivos de media (imágenes/PDFs subidos) en modo desarrollo
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
