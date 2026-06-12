@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.simplejwt',
     'core',
 ]
 
@@ -134,3 +136,15 @@ LOGIN_URL = 'login'
 handler404 = 'core.views.error_404'
 handler500 = 'core.views.error_500'
  
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+# Habilitar el permiso para el desarrollo local
+
+ALLOWED_HOSTS = ['*']
