@@ -15,10 +15,39 @@
             <div class="profile-header-info">
                 <h2 class="m-0" style="color: var(--azul-profundo);">👤 Mi Perfil</h2>
                 <p class="m-0 mt-10 fs-lg fw-bold">{{ user.first_name }} {{ user.last_name }}</p>
-                <p class="m-0 text-muted">{{ user.email }}</p>
+                
                 <p class="m-0 mt-10 fs-sm text-muted">Miembro desde {{ user.date_joined|date:"d/m/Y" }}</p>
             </div>
+
         </div>
+         {# Datos de Contacto #}
+<div class="card-sobria profile-section-card mb-30" style="padding: 20px;">
+    <div class="d-flex justify-between align-center mb-20">
+        <h3 class="form-section-title m-0">📞 Información de Contacto</h3>
+        
+        {# Botón Editar ubicado estratégicamente aquí #}
+        <a href="{% url 'editar_perfil_tutor' %}" class="btn-primary w-auto" style="padding: 5px 12px; font-size: 0.8rem; background: #6c5ce7;">
+            ✏️ Editar datos
+        </a>
+    </div>
+    
+    <div class="d-flex flex-column gap-15">
+        <div class="d-flex justify-between border-bottom pb-10">
+            <span class="text-muted">Email:</span>
+            <span class="fw-bold">{{ user.email }}</span>
+        </div>
+        
+        <div class="d-flex justify-between border-bottom pb-10">
+            <span class="text-muted">Teléfono:</span>
+            <span class="fw-bold">{{ perfil_tutor.telefono|default:"No cargado" }}</span>
+        </div>
+        
+        <div class="d-flex justify-between">
+            <span class="text-muted">Relación / Parentesco:</span>
+            <span class="fw-bold">{{ perfil_tutor.parentesco|default:"No definido" }}</span>
+        </div>
+    </div>
+</div>
 
         {# Pacientes Vinculados #}
         <div class="card-sobria profile-section-card mb-30">

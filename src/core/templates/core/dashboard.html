@@ -9,9 +9,15 @@
             <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-avatar">
                {% if paciente %}{{ paciente.get_full_name|default:paciente.username|slice:":1"|upper }}{% else %}?{% endif %}
             </a>
-            <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text">
-                <h3 class="m-0">{% if paciente %}{{ paciente.get_full_name|default:paciente.username }}{% else %}Sin paciente asignado{% endif %}</h3>
-                <p class="m-0 text-muted">{% if usuario_es_tutor %}Panel del Tutor{% else %}Mi Panel{% endif %}</p>
+            <a href="{% if usuario_es_tutor %}{% url 'perfil_tutor' %}{% else %}{% url 'perfil_paciente' %}{% endif %}" class="dashboard-info-text" style="text-decoration: none;">
+                <h3 class="m-0" style="color: var(--azul-profundo);">{% if paciente %}{{ paciente.get_full_name|default:paciente.username }}{% else %}Sin paciente asignado{% endif %}</h3>
+                <p class="m-0 mt-10 text-muted">
+                    {% if usuario_es_tutor %}
+                        <span style="background: #e8f0fe; color: var(--azul-profundo); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">👤 Paciente a cargo</span>
+                    {% else %}
+                        Mi Panel de Paciente
+                    {% endif %}
+                </p>
             </a>
         </div>
 
@@ -390,10 +396,16 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        if (typeof window.mostrarGrafico === 'function') {
-            const controles = JSON.parse(document.getElementById('controles-data').textContent);
+        // 1. Buscamos la lista de controles habilitados del paciente
+        const controlesData = document.getElementById('controles-data');
+        
+        if (controlesData && typeof window.mostrarGrafico === 'function') {
+            const controles = JSON.parse(controlesData.textContent);
+            
+            // 2. Si el paciente tiene al menos un control habilitado, 
+            // le decimos a Chart.js que dibuje el primero de la lista automáticamente.
             if (controles.length > 0) {
-                window.mostrarGrafico(controles[0]);
+                window.mostrarGrafico(controles[0]); 
             }
         }
     });

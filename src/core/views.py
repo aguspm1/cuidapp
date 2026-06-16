@@ -6,9 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
+from datetime import timedelta
 from django.core.paginator import Paginator
-from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma, Notificacion
-from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm
+from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma, Notificacion, PerfilTutor
+from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm, PerfilTutorForm
 
 
 # ========== HELPERS REFACTORIZADOS ==========
@@ -138,14 +139,19 @@ def dashboard(request):
         fecha_registro__gte=hace_una_semana
     ).order_by('fecha_registro')
 
-    datos_grafico = []
+    datos_grafico = {
+        'presion': {'labels': [], 'valores_1': [], 'valores_2': []},
+        'peso':    {'labels': [], 'valores_1': []},
+        'glucosa': {'labels': [], 'valores_1': []}
+    }
+    
     for m in mediciones_recientes:
-        datos_grafico.append({
-            'tipo': m.tipo,
-            'fecha': m.fecha_registro.strftime('%d/%m %H:%M'),
-            'valor_1': m.valor_1,
-            'valor_2': m.valor_2
-        })
+        fecha_str = m.fecha_registro.strftime('%d/%m %H:%M')
+        if m.tipo in datos_grafico:
+            datos_grafico[m.tipo]['labels'].append(fecha_str)
+            datos_grafico[m.tipo]['valores_1'].append(m.valor_1)
+            if m.tipo == 'presion':
+                datos_grafico[m.tipo]['valores_2'].append(m.valor_2)
 
     # Controles médicos requeridos del paciente (como lista para los templates)
     controles_permitidos = []
@@ -312,22 +318,92 @@ def editar_medicamento(request, pk):
 
 @login_required
 def registrar_toma(request, medicamento_id):
-    perfil, target_user = obtener_paciente_activo(request)
-    # Seguridad: El medicamento debe pertenecer al paciente actual
-    med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=target_user, activo=True)
+    if request.method == 'POST':
+        medicamento = get_object_or_404(Medicamento, id=medicamento_id)
+        ahora = timezone.now()
+        
+        # 1. Buscamos el registro de la última toma real de este paciente con este remedio
+        ultima_toma = RegistroToma.objects.filter(
+            medicamento=medicamento,
+            paciente=request.user
+        ).order_by('-fecha_hora').first()
 
-    if med.stock_actual >= med.dosis_por_toma:
-        med.stock_actual = max(0.0, float(med.stock_actual) - float(med.dosis_por_toma))
-        med.save()
+        if ultima_toma:
+            tiempo_transcurrido = ahora - ultima_toma.fecha_hora
 
-        RegistroToma.objects.create(
-            medicamento=med,
-            paciente=target_user,
-            cantidad_tomada=med.dosis_por_toma
-        )
-        messages.success(request, f'💊 Toma registrada para {med.nombre}. Stock reducido.')
-    else:
-        messages.error(request, f'⚠️ Stock insuficiente para {med.nombre}. ¡Por favor reponer!')
+            # 🛡️ ESCUDO 1: Universal anti doble clic / margen de error inmediato (10 minutos)
+            if tiempo_transcurrido < timedelta(minutes=10):
+                messages.warning(request, f"¡Tranquilo! Ya se registró una toma de {medicamento.nombre} hace unos instantes.")
+                return redirect('dashboard')
+
+            # 🛡️ ESCUDO 2: Regulación por EVENTO (Ej: Almuerzo — Máximo 1 por día calendario)
+            if medicamento.frecuencia_tipo == 'evento':
+                hoy_inicio = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+                hoy_fin = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
+                ya_tomo_hoy = RegistroToma.objects.filter(
+                    medicamento=medicamento,
+                    paciente=request.user,
+                    fecha_hora__range=(hoy_inicio, hoy_fin)
+                ).exists()
+                if ya_tomo_hoy:
+                    messages.warning(request, f"Ya registraste la toma diaria de {medicamento.nombre} correspondiente a hoy.")
+                    return redirect('dashboard')
+
+            # 🛡️ ESCUDO 3: Regulación por INTERVALO (Ej: Cada 4 horas — Tolerancia de 1 hora de anticipación)
+            elif medicamento.frecuencia_tipo == 'intervalo':
+                horas_intervalo = medicamento.cada_cuantas_horas
+                proxima_esperada = ultima_toma.fecha_hora + timedelta(hours=horas_intervalo)
+                margen_tolerancia = timedelta(hours=1)
+                
+                if ahora < (proxima_esperada - margen_tolerancia):
+                    tiempo_restante = proxima_esperada - ahora
+                    horas_falta = tiempo_restante.seconds // 3600
+                    minutos_falta = (tiempo_restante.seconds % 3600) // 60
+                    messages.warning(
+                        request, 
+                        f"Es muy temprano para {medicamento.nombre}. Según tu plan de cada {horas_intervalo} horas, "
+                        f"deberías tomarlo aprox. en {horas_falta}h y {minutos_falta} min."
+                    )
+                    return redirect('dashboard')
+
+            # 🛡️ ESCUDO 4: Regulación por HORARIO FIJO (Ej: 16:00 hs — Ventana de bloqueo de 4 horas por turno)
+            elif medicamento.frecuencia_tipo == 'fijo':
+                if tiempo_transcurrido < timedelta(hours=4):
+                    messages.warning(request, f"Ya registraste la toma de {medicamento.nombre} correspondiente a este turno horario.")
+                    return redirect('dashboard')
+
+        # --- PROCESO DE REGISTRO EXITOSO (Si superó todas las validaciones) ---
+        if medicamento.stock_actual > 0:
+            # Descontamos el stock
+            medicamento.stock_actual -= 1
+            medicamento.save()
+
+            # Guardamos la toma en el historial
+            RegistroToma.objects.create(
+                medicamento=medicamento,
+                paciente=request.user,
+                fecha_hora=ahora,
+                cantidad_tomada=medicamento.dosis_por_toma
+            )
+
+            # 🔔 CREACIÓN DE NOTIFICACIÓN PARA EL TUTOR
+            # Viajamos a través de la relación inversa/directa de tus modelos para hallar al tutor
+            if hasattr(request.user, 'perfil_medico'):
+                tutores = request.user.perfil_medico.tutores.all()
+                nombre_paciente = request.user.get_full_name() or request.user.username
+                
+                for tutor in tutores:
+                    Notificacion.objects.create(
+                        usuario=tutor,  # Destinatario de la alerta
+                        tipo='medicacion',  # Coincide con el if de tu base.html para pintar el emoji 💊
+                        titulo=f"💊 Toma registrada: {nombre_paciente}",
+                        mensaje=f"El paciente confirmó la toma de {medicamento.nombre}.",
+                        fecha_creacion=ahora
+                    )
+
+            messages.success(request, f"✅ Toma de {medicamento.nombre} registrada correctamente.")
+        else:
+            messages.error(request, f"❌ No hay stock suficiente de {medicamento.nombre}.")
 
     return redirect('dashboard')
 
@@ -363,8 +439,8 @@ def eliminar_medicamento(request, pk):
 def historial_tomas(request):
     perfil, target_user = obtener_paciente_activo(request)
     
-    # Filtro específico por ID de remedio opcional
-    med_id = request.GET.get('medicamento')
+    # Filtro específico por ID de remedio opcional (ACÁ ESTÁ EL CAMBIO CLAVE 👇)
+    med_id = request.GET.get('med')
     med_nombre = None
 
     if es_tutor(request.user):
@@ -384,8 +460,6 @@ def historial_tomas(request):
     tomas_paginadas = paginator.get_page(page_number)
 
     return render(request, 'core/historial_tomas.html', {'tomas': tomas_paginadas, 'medicamento_nombre': med_nombre})
-
-
 # ========== 4. AGENDA / CALENDARIO ==========
 
 @login_required
@@ -529,7 +603,8 @@ def perfil_tutor(request):
     if not validar_acceso_tutor(request):
         return redirect('dashboard')
     pacientes = PerfilPaciente.objects.filter(tutores=request.user).select_related('user')
-    return render(request, 'core/perfil_tutor.html', {'pacientes': pacientes})
+    perfil_tutor, created = PerfilTutor.objects.get_or_create(user=request.user)
+    return render(request, 'core/perfil_tutor.html', {'pacientes': pacientes, 'perfil_tutor': perfil_tutor})
 
 @login_required
 def perfil_paciente(request):
@@ -547,16 +622,38 @@ def editar_perfil(request, paciente_id):
             return redirect('dashboard')
         perfil = get_object_or_404(PerfilPaciente, user=request.user)
 
+    # 1. Obtenemos todos los tutores vinculados a este paciente específico
+    tutores = perfil.tutores.all()
+
     if request.method == 'POST':
         form = PerfilPacienteForm(request.POST, instance=perfil)
         if form.is_valid():
-            form.save()
+            perfil_actualizado = form.save(commit=False)
+            
+            # 2. Interceptar la lógica del nuevo dropdown
+            contacto_seleccionado = request.POST.get('contacto_emergencia')
+            if contacto_seleccionado == 'otro':
+                # Si eligió "Otro", guardamos lo que escribió en el input oculto
+                perfil_actualizado.contacto_emergencia = request.POST.get('contacto_emergencia_manual', '')
+            elif contacto_seleccionado:
+                # Si eligió a un tutor, guardamos el nombre del tutor
+                perfil_actualizado.contacto_emergencia = contacto_seleccionado
+            
+            # (El 'telefono_emergencia' se guarda automáticamente porque coincide con el nombre del campo en el formulario original)
+
+            perfil_actualizado.save()
             messages.success(request, '💾 Cambios del perfil guardados con éxito.')
             return redirect('perfil_paciente')
     else:
         form = PerfilPacienteForm(instance=perfil)
-    return render(request, 'core/editar_perfil.html', {'form': form, 'perfil': perfil, 'paciente': perfil.user})
-
+        
+    # 3. Mandamos los tutores al template
+    return render(request, 'core/editar_perfil.html', {
+        'form': form, 
+        'perfil': perfil, 
+        'paciente': perfil.user,
+        'tutores': tutores 
+    })
 
 # ========== 7. MEDICIONES, FOTOS Y DOCUMENTOS ==========
 
@@ -635,9 +732,13 @@ def subir_foto(request):
 
 @login_required
 def cargar_dato_medicion(request, foto_id):
+    # 🛡️ BLINDAJE: Impedir que un tutor cargue mediciones aunque tenga el link
+    if es_tutor(request.user):
+        messages.error(request, "⚠️ Los tutores no tienen permisos para cargar mediciones.")
+        return redirect('fotos_mediciones')
+
     foto = get_object_or_404(FotoDocumento, id=foto_id)
     perfil, target_user = obtener_paciente_activo(request)
-    
     # Conseguir los controles permitidos del perfil del paciente
     controles_permitidos = []
     if perfil:
@@ -747,3 +848,87 @@ def marcar_notif_leidas(request):
         Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
         return JsonResponse({'status': 'ok'})
     return redirect('dashboard')
+
+
+@login_required
+def editar_medicion(request, pk):
+    medicion = get_object_or_404(DatoMedicion, pk=pk)
+    # Seguridad: solo el paciente o su tutor pueden editar
+    if medicion.paciente != request.user and not es_tutor(request.user):
+        messages.error(request, "❌ No tenés permiso.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Actualizamos valores según lo enviado
+        medicion.valor_1 = float(request.POST.get('valor_1', medicion.valor_1))
+        if medicion.tipo == 'presion':
+            medicion.valor_2 = float(request.POST.get('valor_2', medicion.valor_2))
+        medicion.observaciones = request.POST.get('observaciones', medicion.observaciones)
+        medicion.save()
+        messages.success(request, '✅ Medición actualizada correctamente.')
+        return redirect('mediciones')
+    
+    return render(request, 'core/editar_medicion.html', {'medicion': medicion})
+
+@login_required
+def eliminar_foto(request, foto_id):
+    foto = get_object_or_404(FotoDocumento, id=foto_id)
+    
+    # Validar permisos
+    if foto.paciente != request.user and not es_tutor(request.user):
+        messages.error(request, "❌ No tenés permisos.")
+        return redirect('fotos_mediciones')
+    
+    # Borrar medición asociada primero (si existe)
+    if hasattr(foto, 'datomedicion'):
+        foto.datomedicion.delete()
+    
+    # Borrar foto
+    foto.delete()
+    messages.success(request, '🗑️ Documento y medición eliminados.')
+    return redirect('fotos_mediciones')
+
+@login_required
+def eliminar_medicion(request, pk):
+    medicion = get_object_or_404(DatoMedicion, pk=pk)
+    
+    # 1. Validar permisos
+    if medicion.paciente != request.user and not es_tutor(request.user):
+        messages.error(request, "❌ No tenés permiso.")
+        return redirect('dashboard')
+    
+    # 2. Capturamos la foto antes de borrar la medición
+    foto_a_borrar = medicion.foto
+    
+    # 3. Borramos la medición primero
+    medicion.delete()
+    
+    # 4. Si había una foto vinculada, la borramos ahora
+    if foto_a_borrar:
+        foto_a_borrar.delete() 
+        
+    messages.success(request, '🗑️ Medición y su foto asociada eliminadas correctamente.')
+    return redirect('mediciones')
+
+# ========== 8. NUEVA VISTA PERFIL TUTOR ==========
+
+@login_required
+def editar_perfil_tutor(request):
+    if not es_tutor(request.user):
+        return redirect('dashboard')
+    
+    # Suponiendo que tienes un modelo llamado PerfilTutor
+    # Si aún no lo creaste, puedes ajustar según tu necesidad actual
+    perfil, created = PerfilTutor.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        # Aquí usarías tu nuevo PerfilTutorForm
+        form = PerfilTutorForm(request.POST, instance=perfil)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '💾 Perfil actualizado correctamente.')
+            return redirect('dashboard')
+    else:
+        form = PerfilTutorForm(instance=perfil)
+        
+    return render(request, 'core/editar_tutor.html', {'form': form})

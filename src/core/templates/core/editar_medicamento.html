@@ -55,8 +55,6 @@
                     </div>
                 </div>
 
-                <input type="hidden" name="horario_fijo" id="id_horario_fijo" value="{{ medicamento.horario_fijo }}">
-
                 <div id="campos-fijo" style="display:none; background: white; padding: 15px; border-radius: var(--radio-md); border-left: 4px solid var(--azul-profundo);" class="mb-20">
                     <div class="form-group m-0">
                         <label>Horario/s de toma</label>
@@ -142,4 +140,34 @@
         </form>
     </div>
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Estas funciones vienen de tu main.js, 
+        // pero las llamamos aquí para forzar la lectura del estado inicial (checked)
+        
+        // 1. Mostrar/Ocultar campos según el radio button seleccionado
+        function inicializarFormulario() {
+            // Frecuencia
+            const radioFrec = document.querySelector('input[name="frecuencia_tipo"]:checked');
+            if (radioFrec) {
+                const val = radioFrec.value;
+                if(document.getElementById('campos-fijo')) document.getElementById('campos-fijo').style.display = (val === 'fijo') ? 'block' : 'none';
+                if(document.getElementById('campos-intervalo')) document.getElementById('campos-intervalo').style.display = (val === 'intervalo') ? 'block' : 'none';
+                if(document.getElementById('campos-evento')) document.getElementById('campos-evento').style.display = (val === 'evento') ? 'block' : 'none';
+            }
+
+            // Duración
+            const radioDur = document.querySelector('input[name="duracion_tipo"]:checked');
+            if (radioDur) {
+                const cFin = document.getElementById('campos-fecha-fin');
+                if (cFin) cFin.style.display = (radioDur.value === 'temporal') ? 'block' : 'none';
+            }
+        }
+
+        inicializarFormulario();
+    });
+</script>
 {% endblock %}

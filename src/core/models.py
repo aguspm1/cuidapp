@@ -1,11 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 # ============================================================
-# 1. PERFIL DE PACIENTE
+# 1. PERFILES
 # ============================================================
+
+class PerfilTutor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_tutor')
+    telefono = models.CharField(max_length=20, verbose_name="Teléfono")
+    parentesco = models.CharField(max_length=50, verbose_name="Relación con el paciente")
 
 class PerfilPaciente(models.Model):
     user   = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_medico')
@@ -66,8 +72,7 @@ class Medicamento(models.Model):
     frecuencia_tipo    = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES, default='fijo')
     horario_fijo       = models.CharField(max_length=200, blank=True, help_text='Ej: 08:00, 14:00, 20:00')
     evento_toma        = models.CharField(max_length=200, blank=True, help_text='Ej: al levantarse, antes de acostarse')
-    cada_cuantas_horas = models.IntegerField(null=True, blank=True, help_text='Ej: 6, 8, 12, 24')
-
+    cada_cuantas_horas = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(24)],null=True, blank=True)
     duracion_tipo = models.CharField(max_length=20, choices=DURACION_CHOICES, default='cronico')
     fecha_inicio  = models.DateField(auto_now_add=True)
     fecha_fin     = models.DateField(null=True, blank=True, help_text="Solo si duracion_tipo='temporal'")
@@ -162,8 +167,8 @@ class DatoMedicion(models.Model):
     valor_2       = models.FloatField(null=True, blank=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     observaciones = models.TextField(blank=True)
-    foto = models.OneToOneField(FotoDocumento, on_delete=models.SET_NULL, null=True, blank=True)
-
+    foto = models.ForeignKey(FotoDocumento, on_delete=models.CASCADE, null=True, blank=True)
+    
     class Meta:
         ordering = ['-fecha_registro']
         verbose_name_plural = 'Datos de Mediciones'

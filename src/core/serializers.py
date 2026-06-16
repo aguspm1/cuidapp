@@ -22,12 +22,19 @@ class MedicamentoSerializer(serializers.ModelSerializer):
     tiene_stock_bajo   = serializers.BooleanField(read_only=True)
     porcentaje_stock   = serializers.IntegerField(read_only=True)
     tomas_restantes    = serializers.IntegerField(read_only=True)
+    fecha_inicio = serializers.DateField(format="%Y-%m-%d", allow_null=True)
+    fecha_fin = serializers.DateField(format="%Y-%m-%d", allow_null=True)
+    horario_fijo = serializers.TimeField(format="%H:%M", allow_null=True)
+    presentacion_display = serializers.CharField(source='get_tipo_presentacion_display', read_only=True)
+    frecuencia_display = serializers.CharField(source='get_frecuencia_tipo_display', read_only=True)
 
-    class Meta:
+class Meta:
         model = Medicamento
         fields = [
-            'id', 'nombre', 'tipo_presentacion', 'unidad_medida', 'dosis_por_toma',
-            'frecuencia_tipo', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
+            'id', 'nombre', 'tipo_presentacion', 'presentacion_display', # <-- Agregado
+            'unidad_medida', 'dosis_por_toma',
+            'frecuencia_tipo', 'frecuencia_display',                   # <-- Agregado
+            'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
             'duracion_tipo', 'fecha_inicio', 'fecha_fin',
             'stock_actual', 'stock_total', 'umbral_stock_minimo',
             'activo', 'tiene_stock_bajo', 'porcentaje_stock', 'tomas_restantes',
@@ -50,8 +57,15 @@ class NotificacionSerializer(serializers.ModelSerializer):
         ]
 
 class FotoDocumentoSerializer(serializers.ModelSerializer):
+    imagen_url = serializers.SerializerMethodField()
     class Meta:
         model = FotoDocumento
-        fields = ['id', 'tipo', 'imagen', 'nota_paciente', 'fecha_subida', 'procesada']
+        fields = ['id', 'tipo', 'imagen', 'imagen_url', 'nota_paciente', 'fecha_subida', 'procesada']
         # Protegemos estos campos para que Flutter no los pueda sobreescribir por error
         read_only_fields = ['fecha_subida', 'procesada']
+    
+    def get_imagen_url(self, obj):
+        request = self.context.get('request')
+        if obj.imagen and request:
+            return request.build_absolute_uri(obj.imagen.url)
+        return None

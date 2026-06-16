@@ -1,52 +1,94 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
 {% block content %}
 <main class="main-content">
-    <div class="card-sobria" style="padding: 30px;">
-        <div class="d-flex align-center gap-15 mb-20" style="flex-wrap: wrap;">
-            <a href="{% url 'dashboard' %}" class="btn-cancelar w-auto" style="padding: 8px 14px; font-size: 0.85rem;">← Volver</a>
-            <h2 class="m-0">
-                📋 Historial de Tomas
+    
+    <a href="{% url 'dashboard' %}" class="back-link">← Volver al dashboard</a>
+
+    <div class="card-sobria" style="border-top: 6px solid var(--azul-profundo); padding: 40px;">
+        
+        <div class="mb-30">
+            <h2 class="m-0" style="color: var(--azul-profundo);">
                 {% if medicamento_nombre %}
-                    — <span style="color: var(--azul-profundo);">{{ medicamento_nombre }}</span>
+                    📋 Historial: {{ medicamento_nombre }}
+                {% else %}
+                    📋 Historial General de Medicación
                 {% endif %}
             </h2>
+            <p class="text-muted mt-10">
+                {% if medicamento_nombre %}
+                    Viendo los registros exclusivos de este medicamento.
+                {% else %}
+                    Listado completo de todas las tomas registradas.
+                {% endif %}
+            </p>
         </div>
-
-        {% if medicamento_nombre %}
-        <div class="mb-20" style="background: #f0faff; border: 1px solid var(--celeste-neon); border-radius: var(--radio-md); padding: 10px 16px; font-size: 0.9rem; color: var(--azul-profundo);">
-            Mostrando tomas del medicamento: <strong style="color: #0369a1;">{{ medicamento_nombre }}</strong>
-            &nbsp;·&nbsp; <a href="{% url 'historial_tomas' %}" style="color: var(--azul-profundo); font-weight: bold; text-decoration: none;">Ver historial completo</a>
-        </div>
-        {% endif %}
 
         {% if tomas %}
         <div class="tabla-meds-container">
             <table class="tabla-meds">
                 <thead>
                     <tr>
-                        <th>Paciente</th>
-                        <th>Medicamento</th>
-                        <th>Fecha y Hora</th>
+                        {% if not medicamento_nombre %}
+                            <th>MEDICAMENTO</th>
+                        {% endif %}
+                        <th>FECHA Y HORA</th>
+                        <th>PACIENTE</th>
+                        <th>ESTADO</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for toma in tomas %}
                     <tr>
-                        <td>{{ toma.paciente.first_name }}</td>
-                        <td><strong>{{ toma.medicamento.nombre }}</strong></td>
-                        <td>{{ toma.fecha_hora|date:"d/m/Y H:i" }}</td>
+                        {% if not medicamento_nombre %}
+                            <td>
+                                <strong style="color: var(--azul-profundo);">{{ toma.medicamento.nombre }}</strong>
+                            </td>
+                        {% endif %}
+                        
+                        <!-- Usamos fecha_hora que es el campo que tenés en tu vista -->
+                        <td class="fw-bold">
+                            {{ toma.fecha_hora|date:"d/m/Y" }} — {{ toma.fecha_hora|date:"H:i" }} hs
+                        </td>
+                        
+                        <td class="text-muted">
+                            {{ toma.paciente.get_full_name|default:toma.paciente.username }}
+                        </td>
+
+                        <td>
+                            <span style="background: #e8f5e9; color: #27ae60; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">
+                                ✅ Tomado
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="empty-state">
-            <p>📭 No hay tomas registradas{% if medicamento_nombre %} para {{ medicamento_nombre }}{% endif %}.</p>
+
+        <!-- Controles de Paginación -->
+        {% if tomas.has_other_pages %}
+        <div class="d-flex justify-center gap-10 mt-30">
+            {% if tomas.has_previous %}
+                <a href="?page={{ tomas.previous_page_number }}{% if request.GET.med %}&med={{ request.GET.med }}{% endif %}" class="btn-cancelar w-auto" style="padding: 8px 15px;">← Anterior</a>
+            {% endif %}
+            
+            <span class="fw-bold text-muted" style="padding: 8px 15px;">
+                Página {{ tomas.number }} de {{ tomas.paginator.num_pages }}
+            </span>
+            
+            {% if tomas.has_next %}
+                <a href="?page={{ tomas.next_page_number }}{% if request.GET.med %}&med={{ request.GET.med }}{% endif %}" class="btn-cancelar w-auto" style="padding: 8px 15px;">Siguiente →</a>
+            {% endif %}
         </div>
         {% endif %}
+
+        {% else %}
+        <div class="empty-state mt-20">
+            <p>📭 No hay registros de tomas para mostrar todavía.</p>
+        </div>
+        {% endif %}
+
     </div>
 </main>
 {% endblock %}

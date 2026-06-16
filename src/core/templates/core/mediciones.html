@@ -40,6 +40,7 @@
                             <th style="color: #e74c3c; border-bottom: 2px solid #e74c3c;">Sistólica</th>
                             <th style="color: #e74c3c; border-bottom: 2px solid #e74c3c;">Diastólica</th>
                             <th style="color: #e74c3c; border-bottom: 2px solid #e74c3c;">Observaciones</th>
+                            <th style="color: #e74c3c; border-bottom: 2px solid #e74c3c; text-align: center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -49,6 +50,18 @@
                             <td class="fw-bold fs-lg">{{ med.valor_1|floatformat:0 }} mmHg</td>
                             <td class="fw-bold fs-lg">{{ med.valor_2|floatformat:0 }} mmHg</td>
                             <td class="text-muted">{{ med.observaciones|default:"-" }}</td>
+                            <td style="vertical-align: middle;">
+                                <div class="actions-cell">
+                                    <a href="{% url 'editar_medicion' med.id %}" class="btn-action btn-edit" title="Editar">✏️</a>
+                                    
+                                    <form method="POST" action="{% url 'eliminar_medicion' med.id %}" 
+                                          onsubmit="return confirm('¿Eliminar esta medición y su foto?');" 
+                                          style="margin:0; display:flex;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-delete" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -68,6 +81,7 @@
                             <th style="color: #3498db; border-bottom: 2px solid #3498db;">Fecha</th>
                             <th style="color: #3498db; border-bottom: 2px solid #3498db;">Peso</th>
                             <th style="color: #3498db; border-bottom: 2px solid #3498db;">Observaciones</th>
+                            <th style="color: #3498db; border-bottom: 2px solid #3498db; text-align: center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,6 +90,18 @@
                             <td>{{ med.fecha_registro|date:"d/m/Y H:i" }}</td>
                             <td class="fw-bold fs-lg">{{ med.valor_1|floatformat:1 }} kg</td>
                             <td class="text-muted">{{ med.observaciones|default:"-" }}</td>
+                            <td style="vertical-align: middle;">
+                                <div class="actions-cell">
+                                    <a href="{% url 'editar_medicion' med.id %}" class="btn-action btn-edit" title="Editar">✏️</a>
+                                    
+                                    <form method="POST" action="{% url 'eliminar_medicion' med.id %}" 
+                                          onsubmit="return confirm('¿Eliminar esta medición y su foto?');" 
+                                          style="margin:0; display:flex;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-delete" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -95,6 +121,7 @@
                             <th style="color: #2ecc71; border-bottom: 2px solid #2ecc71;">Fecha</th>
                             <th style="color: #2ecc71; border-bottom: 2px solid #2ecc71;">Nivel</th>
                             <th style="color: #2ecc71; border-bottom: 2px solid #2ecc71;">Observaciones</th>
+                            <th style="color: #2ecc71; border-bottom: 2px solid #2ecc71; text-align: center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,6 +130,18 @@
                             <td>{{ med.fecha_registro|date:"d/m/Y H:i" }}</td>
                             <td class="fw-bold fs-lg">{{ med.valor_1|floatformat:0 }} mg/dL</td>
                             <td class="text-muted">{{ med.observaciones|default:"-" }}</td>
+                            <td style="vertical-align: middle;">
+                                <div class="actions-cell">
+                                    <a href="{% url 'editar_medicion' med.id %}" class="btn-action btn-edit" title="Editar">✏️</a>
+                                    
+                                    <form method="POST" action="{% url 'eliminar_medicion' med.id %}" 
+                                          onsubmit="return confirm('¿Eliminar esta medición y su foto?');" 
+                                          style="margin:0; display:flex;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-delete" title="Eliminar">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

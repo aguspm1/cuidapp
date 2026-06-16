@@ -11,6 +11,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('registro/', views.registro, name='registro'),
     path('', views.dashboard, name='dashboard'),
+    path('perfil/editar-tutor/', views.editar_perfil_tutor, name='editar_perfil_tutor'),
     path('editar-perfil/<int:paciente_id>/', views.editar_perfil, name='editar_perfil'),
  
     # Medicamentos
@@ -44,7 +45,11 @@ urlpatterns = [
     path('fotos-mediciones/<int:foto_id>/cargar/', views.cargar_dato_medicion, name='cargar_dato'),
     path('fotos-mediciones/<int:foto_id>/procesar/', views.procesar_documento, name='procesar_documento'),
     path('fotos-mediciones/<int:foto_id>/rechazar/', views.rechazar_documento, name='rechazar_documento'),
+    path('medicion/<int:pk>/editar/', views.editar_medicion, name='editar_medicion'),
+    path('medicion/<int:pk>/eliminar/', views.eliminar_medicion, name='eliminar_medicion'),
+    path('fotos-mediciones/<int:foto_id>/eliminar/', views.eliminar_foto, name='eliminar_foto'),
 
+    
 # URLs para la API
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

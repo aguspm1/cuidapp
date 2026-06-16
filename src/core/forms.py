@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Medicamento, PerfilPaciente, FotoDocumento
+from .models import Medicamento, PerfilPaciente, FotoDocumento, PerfilTutor
 
 class RegistroForm(UserCreationForm):
     ROLES = (('paciente', 'Paciente (App móvil)'), ('tutor', 'Tutor (Panel web)'))
@@ -48,40 +48,48 @@ class PerfilPacienteForm(forms.ModelForm):
 
 
 class MedicamentoForm(forms.ModelForm):
+    # Definimos el campo explícitamente fuera de Meta para configurar el widget correctamente
+    cada_cuantas_horas = forms.IntegerField(
+        required=False, 
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': 1,
+            'max': 24,
+            'placeholder': 'Ej: 8'
+        })
+    )
+
     class Meta:
         model = Medicamento
         fields = [
             'nombre', 'tipo_presentacion', 'unidad_medida', 'dosis_por_toma',
             'frecuencia_tipo', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
             'duracion_tipo', 'fecha_fin',
-            'stock_actual', 'stock_total', 'umbral_stock_minimo'
+            'stock_actual', 'stock_total', 'umbral_stock_minimo', 'activo'
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Clonazepam'}),
             'tipo_presentacion': forms.Select(attrs={'class': 'form-control'}),
             'unidad_medida': forms.Select(attrs={'class': 'form-control'}),
-            # 👇 Se agregó 'min': '0' a la dosis
             'dosis_por_toma': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Ej: 1, 15, 5.5', 'min': '0'}),
             'frecuencia_tipo': forms.RadioSelect(),
             'horario_fijo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 08:00 hs'}),
             'evento_toma': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: al levantarse'}),
-            # 👇 Se agregó 'min': '0' a las horas
-            'cada_cuantas_horas': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'duracion_tipo': forms.RadioSelect(),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            # 👇 Se agregó 'min': '0' a todos los campos de stock
             'stock_actual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'stock_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Cantidad en caja estándar', 'min': '0'}),
             'umbral_stock_minimo': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Validación estricta en el Backend para evitar números negativos
-        self.fields['dosis_por_toma'].min_value = 0.0
-        self.fields['stock_actual'].min_value = 0
-        self.fields['stock_total'].min_value = 0
-        self.fields['umbral_stock_minimo'].min_value = 0
+        # Aseguramos que los campos numéricos tengan valores mínimos
+        self.fields['dosis_por_toma'].widget.attrs.update({'min': '0'})
+        self.fields['stock_actual'].widget.attrs.update({'min': '0'})
+        self.fields['stock_total'].widget.attrs.update({'min': '0'})
+        self.fields['umbral_stock_minimo'].widget.attrs.update({'min': '0'})
 
     def clean(self):
         cleaned_data = super().clean()
@@ -134,4 +142,23 @@ class SubirFotoForm(forms.ModelForm):
             'tipo': '¿Qué tipo de documento es?',
             'imagen': 'Seleccionar Foto o PDF',
             'nota_paciente': 'Nota del paciente (opcional)',
+        }
+
+class PerfilTutorForm(forms.ModelForm):
+    class Meta:
+        model = PerfilTutor
+        fields = ['telefono', 'parentesco']
+        widgets = {
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ej: 11 1234-5678'
+            }),
+            'parentesco': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ej: Hijo, Sobrino, Cuidar profesional'
+            }),
+        }
+        labels = {
+            'telefono': 'Teléfono de contacto',
+            'parentesco': 'Parentesco / Relación'
         }

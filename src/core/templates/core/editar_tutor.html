@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<main class="main-content auth-container">
+    <div class="card-sobria auth-card" style="max-width: 500px;">
+        <a href="{% url 'dashboard' %}" class="back-link">← Volver al Dashboard</a>
+        
+        <h2 class="card-title text-center m-0">👤 Editar mis datos</h2>
+        <p class="text-center text-muted mt-10 mb-30">Completá tus datos de contacto.</p>
+
+        <form method="POST" class="auth-form-django">
+            {% csrf_token %}
+            
+            <div class="form-group mb-20">
+                <label>{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+            </div>
+
+            <div class="form-group mb-30">
+                <label>{{ form.parentesco.label }}</label>
+                {{ form.parentesco }}
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">💾 Guardar cambios</button>
+        </form>
+    </div>
+</main>
+{% endblock %}

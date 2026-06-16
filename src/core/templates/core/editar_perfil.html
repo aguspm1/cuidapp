@@ -36,10 +36,29 @@
             <div class="card-sobria profile-section-card mb-30">
                 <h3 class="form-section-title mb-20">🚨 Emergencia</h3>
                 <div class="profile-grid-2 form-group mb-20">
+                    
                     <div>
                         <label class="data-label">Contacto de Emergencia:</label>
-                        {{ form.contacto_emergencia }}
+                        <select name="contacto_emergencia" id="select_contacto_emergencia" class="form-control" required>
+                            <option value="">-- Seleccionar Tutor --</option>
+                            
+                            {% for tutor in tutores %}
+                                <option value="{{ tutor.get_full_name }}" 
+                                        data-telefono="{{ tutor.perfiltutor.telefono|default:'' }}"
+                                        {% if perfil.contacto_emergencia == tutor.get_full_name %}selected{% endif %}>
+                                    {{ tutor.get_full_name }} (Tutor)
+                                </option>
+                            {% endfor %}
+                            
+                            <option value="otro">Otro (Carga manual)...</option>
+                        </select>
+                        
+                        <input type="text" name="contacto_emergencia_manual" id="input_contacto_manual" 
+                               class="form-control mt-10" style="display: none;" 
+                               placeholder="Escribí el nombre del contacto" 
+                               value="{{ perfil.contacto_emergencia|default:'' }}">
                     </div>
+
                     <div>
                         <label class="data-label">Teléfono:</label>
                         {{ form.telefono_emergencia }}
@@ -102,4 +121,52 @@
         </form>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectContacto = document.getElementById('select_contacto_emergencia');
+    const inputManual = document.getElementById('input_contacto_manual');
+    // Django asigna "id_telefono_emergencia" por defecto a este campo
+    const inputTelefono = document.getElementById('id_telefono_emergencia') || document.querySelector('input[name="telefono_emergencia"]');
+
+    if (selectContacto && inputTelefono && inputManual) {
+        
+        // Verifica si debe mostrar el input de texto libre
+        function checkManualInput() {
+            if (selectContacto.value === 'otro') {
+                inputManual.style.display = 'block';
+                inputManual.required = true;
+            } else {
+                inputManual.style.display = 'none';
+                inputManual.required = false;
+            }
+        }
+
+        // Si el valor inicial no coincide con ningún tutor (y no está vacío), forzamos la opción "otro"
+        if (selectContacto.value !== "") {
+            let opcionExiste = Array.from(selectContacto.options).some(opt => opt.value === selectContacto.value && opt.value !== "otro");
+            if (!opcionExiste) {
+                selectContacto.value = "otro";
+            }
+        }
+        checkManualInput();
+
+        // Detectar los cambios que hace el usuario al hacer click en el dropdown
+        selectContacto.addEventListener('change', function() {
+            checkManualInput();
+            
+            if (this.value === 'otro') {
+                inputTelefono.value = '';
+                inputTelefono.focus();
+            } else if (this.value !== "") {
+                const selectedOption = this.options[this.selectedIndex];
+                const telefonoTutor = selectedOption.getAttribute('data-telefono');
+                if (telefonoTutor) {
+                    inputTelefono.value = telefonoTutor;
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -6,56 +6,75 @@
 
     <a href="{% url 'fotos_mediciones' %}" class="back-link">← Volver a Documentos</a>
 
-    <div class="mb-30">
-        <h2 class="m-0" style="color: var(--azul-profundo);">📊 Cargar Datos Médicos</h2>
-        <p class="text-muted mt-10">Extracción de datos del documento: <strong>{{ foto.imagen.name }}</strong></p>
-    </div>
-
-    <div class="card-sobria" style="max-width: 600px; margin: 0 auto; padding: 35px;">
+    <div class="card-sobria" style="padding: 40px; border-top: 6px solid var(--celeste-neon);">
         
-        <form method="POST" action="{% url 'cargar_dato' foto.id %}" id="form-medicion">
-            {% csrf_token %}
+        <div class="mb-30">
+            <h2 class="m-0" style="color: var(--azul-profundo);">📊 Cargar Datos Médicos</h2>
+            <p class="text-muted mt-10">Extracción de datos del documento: <strong>{{ foto.imagen.name }}</strong></p>
+        </div>
+
+        <div class="form-row-2">
             
-            <div class="form-group mb-20">
-                <label>Tipo de Control</label>
-                <select name="tipo" id="id_tipo_medicion" class="form-control" onchange="mostrarCampos()" required>
-                    <option value="">-- Seleccionar --</option>
-                    {% if 'presion' in controles_permitidos %}<option value="presion">Presión Arterial</option>{% endif %}
-                    {% if 'glucosa' in controles_permitidos %}<option value="glucosa">Glucosa</option>{% endif %}
-                    {% if 'peso' in controles_permitidos %}<option value="peso">Peso (Kg)</option>{% endif %}
-                </select>
-            </div>
-
-            <div id="campos-presion" style="display: none;" class="mb-20">
-                <div class="form-row-2">
-                    <div>
-                        <label>Sistólica (Alta)</label>
-                        <input type="number" step="0.1" name="presion_sistolica" class="form-control" placeholder="Ej: 120">
-                    </div>
-                    <div>
-                        <label>Diastólica (Baja)</label>
-                        <input type="number" step="0.1" name="presion_diastolica" class="form-control" placeholder="Ej: 80">
-                    </div>
+            <div style="background: var(--gris-claro); padding: 20px; border-radius: var(--radio-md); text-align: center; height: fit-content; position: sticky; top: 100px;">
+                <span class="d-block fw-bold text-muted mb-15">📸 Documento Subido</span>
+                
+                <img src="{{ foto.imagen.url }}" alt="Documento médico" style="max-width: 100%; border-radius: var(--radio-sm); box-shadow: var(--sombra-media);">
+                
+                {% if foto.nota %}
+                <div class="mt-20 text-left" style="background: white; padding: 15px; border-radius: var(--radio-sm); border-left: 4px solid var(--celeste-neon);">
+                    <small class="text-muted fw-bold d-block mb-5">Nota adjunta:</small>
+                    <p class="m-0 fs-sm">{{ foto.nota }}</p>
                 </div>
+                {% endif %}
             </div>
 
-            <div id="campos-peso" style="display: none;" class="mb-20">
-                <label>Peso Registrado (Kg)</label>
-                <input type="number" step="0.1" name="peso" class="form-control" placeholder="Ej: 72.5">
-            </div>
+            <div style="padding: 10px;">
+                <form method="POST" action="{% url 'cargar_dato' foto.id %}" id="form-medicion">
+                    {% csrf_token %}
+                    
+                    <div class="form-group mb-20">
+                        <label>Tipo de Control</label>
+                        <select name="tipo" id="id_tipo_medicion" class="form-control" onchange="mostrarCampos()" required>
+                            <option value="">-- Seleccionar --</option>
+                            {% if 'presion' in controles_permitidos %}<option value="presion">Presión Arterial</option>{% endif %}
+                            {% if 'glucosa' in controles_permitidos %}<option value="glucosa">Glucosa</option>{% endif %}
+                            {% if 'peso' in controles_permitidos %}<option value="peso">Peso (Kg)</option>{% endif %}
+                        </select>
+                    </div>
 
-            <div id="campos-glucosa" style="display: none;" class="mb-20">
-                <label>Glucosa en Sangre (mg/dL)</label>
-                <input type="number" step="0.1" name="glucosa" class="form-control" placeholder="Ej: 95">
-            </div>
+                    <div id="campos-presion" style="display: none;" class="mb-20">
+                        <div class="form-row-2">
+                            <div>
+                                <label>Sistólica (Alta)</label>
+                                <input type="number" step="1" min="40" max="300" name="presion_sistolica" class="form-control" placeholder="Ej: 120">
+                            </div>
+                            <div>
+                                <label>Diastólica (Baja)</label>
+                                <input type="number" step="1" min="30" max="200" name="presion_diastolica" class="form-control" placeholder="Ej: 80">
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="form-group mb-30">
-                <label>Observaciones del Tutor (Opcional)</label>
-                <textarea name="observaciones" class="form-control" rows="3" placeholder="Ej: La medición se hizo en ayunas..."></textarea>
-            </div>
+                    <div id="campos-peso" style="display: none;" class="mb-20">
+                        <label>Peso Registrado (Kg)</label>
+                        <input type="number" step="0.1" min="1" max="500" name="peso" class="form-control" placeholder="Ej: 72.5">
+                    </div>
 
-            <button type="submit" class="btn-primary mt-10">💾 Guardar Medición</button>
-        </form>
+                    <div id="campos-glucosa" style="display: none;" class="mb-20">
+                        <label>Glucosa en Sangre (mg/dL)</label>
+                        <input type="number" step="1" min="20" max="1000" name="glucosa" class="form-control" placeholder="Ej: 95">
+                    </div>
+
+                    <div class="form-group mb-30">
+                        <label>Observaciones del Tutor (Opcional)</label>
+                        <textarea name="observaciones" class="form-control" rows="3" placeholder="Ej: La medición se hizo en ayunas..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-primary mt-10">💾 Guardar Medición</button>
+                </form>
+            </div>
+            
+        </div>
     </div>
 
 </main>
@@ -74,7 +93,10 @@ document.getElementById('form-medicion').addEventListener('submit', function(e) 
     const tipo = document.getElementById('id_tipo_medicion').value;
     let inputs = [];
 
-    // Seleccionamos los inputs activos según el tipo
+    // Desactivar el 'required' de los campos que están ocultos para que el form pueda enviarse,
+    // y aplicarlo solo a los que están visibles.
+    document.querySelectorAll('input[type="number"]').forEach(input => input.removeAttribute('required'));
+
     if (tipo === 'presion') {
         inputs = [document.querySelector('input[name="presion_sistolica"]'), document.querySelector('input[name="presion_diastolica"]')];
     } else if (tipo === 'peso') {
@@ -83,14 +105,8 @@ document.getElementById('form-medicion').addEventListener('submit', function(e) 
         inputs = [document.querySelector('input[name="glucosa"]')];
     }
 
-    // Validación anti-negativos
     for (let input of inputs) {
-        if (parseFloat(input.value) <= 0) {
-            e.preventDefault();
-            alert("❌ Error: Los valores médicos deben ser mayores a cero.");
-            input.focus();
-            return false;
-        }
+        input.setAttribute('required', 'true');
     }
 });
 </script>

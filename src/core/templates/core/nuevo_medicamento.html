@@ -132,7 +132,7 @@
                 
                 <div class="form-group mb-20">
                     <div class="d-flex gap-20">
-                        <label style="cursor: pointer;" class="fw-bold"><input type="radio" name="duracion_tipo" value="permanente" checked> Crónico / Permanente</label>
+                        <label style="cursor: pointer;" class="fw-bold"><input type="radio" name="duracion_tipo" value="cronico" checked> Crónico / Permanente</label>
                         <label style="cursor: pointer;" class="fw-bold"><input type="radio" name="duracion_tipo" value="temporal"> Temporal</label>
                     </div>
                 </div>
@@ -156,68 +156,4 @@
 
 {% block scripts %}
 <script src="{% static 'core/js/main.js' %}"></script>
-<script>
-function toggleAcordeon(boton) {
-    const itemActual = boton.parentElement;
-    const contenidoActual = itemActual.querySelector('.acordeon-content');
-    const flechaActual = itemActual.querySelector('.acordeon-flecha');
-    const estaActivo = itemActual.classList.contains('active');
-    
-    document.querySelectorAll('.acordeon-item').forEach(item => {
-        item.classList.remove('active');
-        item.querySelector('.acordeon-content').style.display = 'none';
-        item.querySelector('.acordeon-flecha').style.transform = 'rotate(-90deg)';
-    });
-    
-    if (!estaActivo) {
-        itemActual.classList.add('active');
-        contenidoActual.style.display = 'block';
-        flechaActual.style.transform = 'rotate(0deg)';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const stockTotalInput = document.querySelector('input[name="stock_total"]');
-    const stockActualInput = document.querySelector('input[name="stock_actual"]');
-    const dosisInput = document.querySelector('input[name="dosis_por_toma"]');
-    const cadaHorasInput = document.querySelector('input[name="cada_cuantas_horas"]');
-    const form = document.querySelector('form');
-
-    // AUTOMATIZACIÓN: Clonar stock total a inicial si está vacío
-    if (stockTotalInput && stockActualInput) {
-        stockTotalInput.addEventListener('input', function() {
-            if (!stockActualInput.value || stockActualInput.value === '0') {
-                stockActualInput.value = stockTotalInput.value;
-            }
-        });
-    }
-
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const dosis = parseFloat(dosisInput?.value) || 0;
-            const stockActual = parseFloat(stockActualInput?.value) || 0;
-            const stockTotal = parseFloat(stockTotalInput?.value) || 0;
-
-            if (dosis < 0 || stockActual < 0 || stockTotal < 0) {
-                e.preventDefault(); alert("❌ Error: Ningún valor de stock o dosis puede ser negativo."); return false;
-            }
-            if (dosis <= 0) {
-                e.preventDefault(); alert("❌ Error: La dosis debe ser un valor mayor a cero."); return false;
-            }
-            if (dosis > stockActual) {
-                e.preventDefault(); alert(`❌ Error: La dosis (${dosis}) no puede superar al stock actual disponible (${stockActual}).`); return false;
-            }
-            if (dosis > stockTotal) {
-                e.preventDefault(); alert(`❌ Error: La dosis (${dosis}) no puede ser mayor que la capacidad total del envase (${stockTotal}).`); return false;
-            }
-            if (cadaHorasInput && cadaHorasInput.value !== '') {
-                const cadaHoras = parseFloat(cadaHorasInput.value) || 0;
-                if (cadaHoras < 1 || cadaHoras > 24) {
-                    e.preventDefault(); alert("❌ Error: El intervalo de administración debe estar entre 1 y 24 horas."); cadaHorasInput.focus(); return false;
-                }
-            }
-        });
-    }
-});
-</script>
 {% endblock %}
