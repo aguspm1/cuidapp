@@ -120,7 +120,17 @@ class RegistroToma(models.Model):
     def __str__(self):
         return f"{self.medicamento.nombre} - {self.paciente.username} ({self.fecha_hora.date()})"
 
+class HorarioToma(models.Model):
+    medicamento = models.ForeignKey(Medicamento, related_name='horarios', on_delete=models.CASCADE)
+    hora = models.TimeField()
 
+    class Meta:
+        ordering = ['hora']
+        verbose_name = 'Horario de Toma'
+        verbose_name_plural = 'Horarios de Toma'
+
+    def __str__(self):
+        return f"{self.medicamento.nombre} - {self.hora.strftime('%H:%M')}"
 # ============================================================
 # 3. DOCUMENTOS MÉDICOS Y MEDICIONES
 # ============================================================

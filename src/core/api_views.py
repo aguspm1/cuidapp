@@ -1,22 +1,22 @@
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
-# Modelos
 from .models import (
     PerfilPaciente, 
     Medicamento, 
     EventoCalendario, 
     Notificacion, 
     RegistroToma, 
-    FotoDocumento
+    FotoDocumento,
+    PerfilTutor
 )
 
-# Serializadores
+# IMPORTACIÓN DE SERIALIZADORES
 from .serializers import (
     PerfilPacienteSerializer,
     MedicamentoSerializer,
@@ -26,18 +26,37 @@ from .serializers import (
 )
 
 
+# ========== HELPERS PARA LA API ==========
+# Definirlos acá evita problemas de importación circular con views.py
+
+def es_tutor(user):
+    """Un usuario es tutor si está autenticado y tiene un PerfilTutor."""
+    if not user.is_authenticated:
+        return False
+    return PerfilTutor.objects.filter(user=user).exists()
+
+def es_paciente(user):
+    """Un usuario es paciente si está autenticado y tiene un PerfilPaciente."""
+    if not user.is_authenticated:
+        return False
+    return PerfilPaciente.objects.filter(user=user).exists()
+
+
+# =======================================================
+# ========== ENDPOINTS DE LA API (FLUTTER) ===========
+# =======================================================
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def me(request):
-    # Define el rol y da diferentes respuestas
     user = request.user
-    try:
+    if es_paciente(user):
         perfil = PerfilPaciente.objects.get(user=user)
         return Response({
             'rol': 'paciente',
             'perfil': PerfilPacienteSerializer(perfil).data,
         })
-    except PerfilPaciente.DoesNotExist:
+    elif es_tutor(user):
         return Response({
             'rol': 'cuidador',
             'perfil': {
@@ -48,6 +67,7 @@ def me(request):
                 'email': user.email,
             }
         })
+    return Response({'status': 'error', 'mensaje': 'Usuario incompleto o sin rol asignado.'}, status=400)
 
 
 @api_view(['GET'])
@@ -63,7 +83,6 @@ def mis_medicamentos(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mis_eventos(request):
-    from django.utils import timezone
     eventos = EventoCalendario.objects.filter(
         paciente=request.user,
         fecha_hora__gte=timezone.now()
@@ -94,17 +113,29 @@ def marcar_notificaciones_api(request):
 @permission_classes([IsAuthenticated])
 def registrar_toma_api(request, medicamento_id):
     """Recibe la confirmación desde Flutter de que el paciente tomó el remedio"""
-    med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=request.user, activo=True)
+    user = request.user
+
+    # 🛡️ BLINDAJE EXPLÍCITO DE LA API: Si es un tutor, le bloqueamos la acción
+    if es_tutor(user):
+        return Response(
+            {
+                'status': 'error', 
+                'mensaje': 'Acción denegada: Los tutores no pueden registrar tomas de medicamentos.'
+            }, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Si pasa el filtro, procedemos asegurando que el medicamento le pertenece estrictamente al usuario paciente
+    med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=user, activo=True)
 
     if med.stock_actual >= med.dosis_por_toma:
-        # Descontar stock
         med.stock_actual = max(0.0, float(med.stock_actual) - float(med.dosis_por_toma))
         med.save()
 
         # Registrar la toma en el historial
         RegistroToma.objects.create(
             medicamento=med,
-            paciente=request.user,
+            paciente=user,
             cantidad_tomada=med.dosis_por_toma
         )
         return Response({'status': 'ok', 'mensaje': f'Toma de {med.nombre} registrada correctamente.'})
@@ -123,7 +154,6 @@ def subir_foto_api(request):
     serializer = FotoDocumentoSerializer(data=request.data)
     
     if serializer.is_valid():
-        # Guardamos la foto asignándole el paciente actual automáticamente
         serializer.save(paciente=request.user)
         return Response(
             {'status': 'ok', 'mensaje': 'Documento subido correctamente.', 'data': serializer.data},

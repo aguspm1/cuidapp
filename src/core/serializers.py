@@ -2,7 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento
 
-
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -28,12 +27,12 @@ class MedicamentoSerializer(serializers.ModelSerializer):
     presentacion_display = serializers.CharField(source='get_tipo_presentacion_display', read_only=True)
     frecuencia_display = serializers.CharField(source='get_frecuencia_tipo_display', read_only=True)
 
-class Meta:
+    class Meta:
         model = Medicamento
         fields = [
-            'id', 'nombre', 'tipo_presentacion', 'presentacion_display', # <-- Agregado
+            'id', 'nombre', 'tipo_presentacion', 'presentacion_display',
             'unidad_medida', 'dosis_por_toma',
-            'frecuencia_tipo', 'frecuencia_display',                   # <-- Agregado
+            'frecuencia_tipo', 'frecuencia_display',
             'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
             'duracion_tipo', 'fecha_inicio', 'fecha_fin',
             'stock_actual', 'stock_total', 'umbral_stock_minimo',
@@ -58,6 +57,7 @@ class NotificacionSerializer(serializers.ModelSerializer):
 
 class FotoDocumentoSerializer(serializers.ModelSerializer):
     imagen_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = FotoDocumento
         fields = ['id', 'tipo', 'imagen', 'imagen_url', 'nota_paciente', 'fecha_subida', 'procesada']

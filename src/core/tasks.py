@@ -1,10 +1,10 @@
 from django.utils import timezone
 from .models import PerfilPaciente, EventoCalendario, Medicamento, RegistroToma, Notificacion
 
-def generar_alertas_automaticas(paciente, tutor):
+# 1. AHORA RECIBE UNA LISTA DE TUTORES ('tutores' en plural)
+def generar_alertas_automaticas(paciente, tutores):
     """
     Revisa si hay eventos inminentes o medicación y crea las notificaciones.
-    (Es la misma función que tenías, pero ahora vive aquí)
     """
     ahora = timezone.now()
     en_una_hora = ahora + timezone.timedelta(hours=1)
@@ -46,19 +46,25 @@ def generar_alertas_automaticas(paciente, tutor):
                 disparar_alerta = True
 
         if disparar_alerta:
-            ref_str = int(f"{med.id}{ahora.strftime('%d%m%H')}")
+            ref_str = int(f"{med.id}{ahora.strftime('%d%m%H%M')}")
+            
             if not Notificacion.objects.filter(usuario=paciente, tipo='medicacion', referencia_id=ref_str).exists():
                 Notificacion.objects.create(
                     usuario=paciente, tipo='medicacion', referencia_id=ref_str,
                     titulo=f"💊 Hora de tomar: {med.nombre}",
                     mensaje=f"Dosis: {med.dosis_por_toma} {med.unidad_medida}"
                 )
-            if tutor and not Notificacion.objects.filter(usuario=tutor, tipo='medicacion', referencia_id=ref_str).exists():
-                Notificacion.objects.create(
-                    usuario=tutor, tipo='medicacion', referencia_id=ref_str,
-                    titulo=f"⏰ Recordatorio para {paciente.first_name}",
-                    mensaje=f"Debe tomar {med.nombre} ({med.dosis_por_toma} {med.unidad_medida})."
-                )
+            
+            # 3. BUCLE DE TUTORES: Avisamos a toda la red de apoyo, no solo a uno
+            if tutores:
+                for tutor in tutores:
+                    if not Notificacion.objects.filter(usuario=tutor, tipo='medicacion', referencia_id=ref_str).exists():
+                        Notificacion.objects.create(
+                            usuario=tutor, tipo='medicacion', referencia_id=ref_str,
+                            titulo=f"⏰ Recordatorio para {paciente.first_name}",
+                            mensaje=f"Debe tomar {med.nombre} ({med.dosis_por_toma} {med.unidad_medida})."
+                        )
+
 
 def motor_global_notificaciones():
     """Esta es la tarea maestra que ejecutará el reloj en segundo plano"""
@@ -68,5 +74,7 @@ def motor_global_notificaciones():
     perfiles = PerfilPaciente.objects.select_related('user').all()
     for perfil in perfiles:
         paciente = perfil.user
-        tutor = perfil.tutor if perfil.tutor else perfil.tutores.first()
-        generar_alertas_automaticas(paciente, tutor)
+        
+        tutores = perfil.tutores.all() 
+        
+        generar_alertas_automaticas(paciente, tutores)
