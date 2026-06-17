@@ -1,12 +1,13 @@
 from django.utils import timezone
 from .models import PerfilPaciente, EventoCalendario, Medicamento, RegistroToma, Notificacion
 
-# 1. AHORA RECIBE UNA LISTA DE TUTORES ('tutores' en plural)
 def generar_alertas_automaticas(paciente, tutores):
     """
     Revisa si hay eventos inminentes o medicación y crea las notificaciones.
     """
-    ahora = timezone.now()
+    # 💡 CORRECCIÓN 1: Forzamos a que 'ahora' use la hora local configurada en settings (Argentina)
+    # Esto soluciona que hora_actual_str evalúe correctamente '13:00' en vez de '16:00' UTC
+    ahora = timezone.localtime(timezone.now())
     en_una_hora = ahora + timezone.timedelta(hours=1)
     hora_actual_str = ahora.strftime('%H:00')
 
@@ -16,10 +17,14 @@ def generar_alertas_automaticas(paciente, tutores):
     )
     for ev in eventos_proximos:
         if not Notificacion.objects.filter(usuario=paciente, tipo='evento', referencia_id=ev.id).exists():
+            
+            # 💡 CORRECCIÓN 2: Convertimos la hora del evento a hora local antes de pasarla a texto
+            hora_local_ev = timezone.localtime(ev.fecha_hora)
+            
             Notificacion.objects.create(
                 usuario=paciente, tipo='evento', referencia_id=ev.id,
-                titulo=f"📅 Evento próximo: {ev.titulo}",
-                mensaje=f"Tenés este evento a las {ev.fecha_hora.strftime('%H:%M')} hs."
+                titulo=f" Evento próximo: {ev.titulo}",
+                mensaje=f"Tenés este evento a las {hora_local_ev.strftime('%H:%M')} hs."
             )
 
     # 2. ALERTAS DE MEDICACIÓN
@@ -51,7 +56,7 @@ def generar_alertas_automaticas(paciente, tutores):
             if not Notificacion.objects.filter(usuario=paciente, tipo='medicacion', referencia_id=ref_str).exists():
                 Notificacion.objects.create(
                     usuario=paciente, tipo='medicacion', referencia_id=ref_str,
-                    titulo=f"💊 Hora de tomar: {med.nombre}",
+                    titulo=f" Hora de tomar: {med.nombre}",
                     mensaje=f"Dosis: {med.dosis_por_toma} {med.unidad_medida}"
                 )
             
@@ -68,13 +73,14 @@ def generar_alertas_automaticas(paciente, tutores):
 
 def motor_global_notificaciones():
     """Esta es la tarea maestra que ejecutará el reloj en segundo plano"""
-    print(f"[{timezone.now().strftime('%H:%M:%S')}] ⚙️ Ejecutando motor de notificaciones en segundo plano...")
+    # 💡 CORRECCIÓN 3: También cambiamos el print de control para leerlo en hora local en la terminal
+    ahora_local = timezone.localtime(timezone.now())
+    print(f"[{ahora_local.strftime('%H:%M:%S')}] ⚙️ Ejecutando motor de notificaciones en segundo plano...")
     
     # Busca a todos los pacientes del sistema
     perfiles = PerfilPaciente.objects.select_related('user').all()
     for perfil in perfiles:
         paciente = perfil.user
-        
         tutores = perfil.tutores.all() 
         
         generar_alertas_automaticas(paciente, tutores)

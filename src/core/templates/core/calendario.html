@@ -13,7 +13,7 @@
             <div class="d-flex gap-15 align-center">
                 {% if usuario_es_tutor %}
                 <a href="{% url 'nuevo_evento' %}" class="btn-primary w-auto">
-                    + Agregar Evento
+                    + Agarregar Evento
                 </a>
                 {% endif %}
                 <a href="{% url 'dashboard' %}" class="btn-cancelar w-auto">
@@ -47,7 +47,8 @@
         </div>
         {% endif %}
         
-        <button onclick="cerrarModal()" class="btn-cancelar w-100" style="color: var(--azul-profundo); border: 2px solid var(--azul-profundo); background: transparent;">
+        {# ✏️ CORRECCIÓN: Quitamos el onclick e instalamos un ID y tipo explícito #}
+        <button type="button" id="btn-cerrar-modal" class="btn-cancelar w-100" style="color: var(--azul-profundo); border: 2px solid var(--azul-profundo); background: transparent;">
             Cerrar
         </button>
     </div>
@@ -57,16 +58,29 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script>
-    function cerrarModal() {
-        document.getElementById('modal-evento').style.display = 'none';
-    }
-
-    // Cerrar modal al hacer click fuera
-    document.getElementById('modal-evento').addEventListener('click', function(e) {
-        if (e.target === this) cerrarModal();
-    });
-
     document.addEventListener('DOMContentLoaded', function() {
+        // 1. CAPTURA DE ELEMENTOS DEL MODAL (Segura, post-carga del DOM)
+        const modalEvento = document.getElementById('modal-evento');
+        const btnCerrarModal = document.getElementById('btn-cerrar-modal');
+
+        // Función interna para cerrar
+        function cerrarModal() {
+            if (modalEvento) modalEvento.style.display = 'none';
+        }
+
+        // Escuchar el clic del botón Cerrar
+        if (btnCerrarModal) {
+            btnCerrarModal.addEventListener('click', cerrarModal);
+        }
+
+        // Escuchar el clic fuera del contenido del modal
+        if (modalEvento) {
+            modalEvento.addEventListener('click', function(e) {
+                if (e.target === this) cerrarModal();
+            });
+        }
+
+        // 2. INICIALIZACIÓN DE FULLCALENDAR
         const calendarEl = document.getElementById('calendar-full');
         const eventosRaw = {{ eventos_json|safe }};
 
@@ -116,7 +130,7 @@
                 const btnEditar = document.getElementById('btn-editar-evento');
                 if (btnEditar) btnEditar.href = '/calendario/editar/' + info.event.id + '/';
 
-                document.getElementById('modal-evento').style.display = 'flex';
+                if (modalEvento) modalEvento.style.display = 'flex';
             }
         });
 

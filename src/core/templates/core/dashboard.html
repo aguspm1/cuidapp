@@ -171,6 +171,34 @@
             {% endif %}
 
         </div>
+
+        {# 📋 NUEVA SECCIÓN INTEGRADA: Bitácora de Tomas Recientes de las últimas 24 Horas #}
+        {% if tomas_notif %}
+        <div class="card-sobria mt-30" style="border-top: 6px solid #2ecc71; padding: 40px;">
+            <h3 class="m-0 mb-20" style="color: var(--azul-profundo); display: flex; align-items: center; gap: 10px;">
+                📋 Historial de Tomas Recientes (24 hs)
+            </h3>
+            <div class="d-flex flex-column gap-15">
+                {% for toma in tomas_notif %}
+                <div class="d-flex align-center justify-between" style="background: var(--gris-claro); padding: 18px 25px; border-radius: var(--radio-md); border-left: 5px solid #2ecc71; gap: 20px; flex-wrap: wrap;">
+                    <div class="d-flex align-center">
+                        <div style="font-size: 1.6rem; margin-right: 15px; flex-shrink: 0;">✅</div>
+                        <div>
+                            <strong class="d-block fs-lg" style="color: #2d3748;">{{ toma.paciente.get_full_name|default:toma.paciente.username }}</strong>
+                            <small class="text-muted d-block mt-5" style="font-size: 0.95rem;">
+                                Confirmó la toma de <strong>{{ toma.medicamento.nombre }}</strong> (Dosis: {{ toma.cantidad_tomada }} {{ toma.medicamento.unidad_medida }})
+                            </small>
+                        </div>
+                    </div>
+                    <div class="text-muted" style="text-align: right; font-size: 0.9rem; min-width: 110px;">
+                        <strong style="color: var(--azul-profundo); display: block; font-size: 1.05rem;">🕐 {{ toma.fecha_hora|date:"H:i" }} hs</strong>
+                        <span style="font-size: 0.8rem;">{{ toma.fecha_hora|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div id="seccion-meds" class="pestana-content">
@@ -212,7 +240,7 @@
                                 {% if med.frecuencia_tipo == 'fijo' %}
                                     {% if med.horario_fijo %}
                                         <small class="text-muted fw-bold">1️⃣ {{ med.horario_fijo }}</small>
-                                    {% else %}
+                                    {%   else %}
                                         <small class="text-muted">Sin horario</small>
                                     {% endif %}
                                 {% elif med.frecuencia_tipo == 'intervalo' %}
@@ -396,14 +424,10 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Buscamos la lista de controles habilitados del paciente
         const controlesData = document.getElementById('controles-data');
         
         if (controlesData && typeof window.mostrarGrafico === 'function') {
             const controles = JSON.parse(controlesData.textContent);
-            
-            // 2. Si el paciente tiene al menos un control habilitado, 
-            // le decimos a Chart.js que dibuje el primero de la lista automáticamente.
             if (controles.length > 0) {
                 window.mostrarGrafico(controles[0]); 
             }

@@ -27,13 +27,17 @@ from .serializers import (
 
 
 # ========== HELPERS PARA LA API ==========
-# Definirlos acá evita problemas de importación circular con views.py
 
 def es_tutor(user):
-    """Un usuario es tutor si está autenticado y tiene un PerfilTutor."""
+    """Un usuario es tutor si está autenticado y tiene un PerfilTutor o califica como tal."""
     if not user.is_authenticated:
         return False
-    return PerfilTutor.objects.filter(user=user).exists()
+    if PerfilTutor.objects.filter(user=user).exists():
+        return True
+    if not PerfilPaciente.objects.filter(user=user).exists():
+        PerfilTutor.objects.get_or_create(user=user)
+        return True
+    return False
 
 def es_paciente(user):
     """Un usuario es paciente si está autenticado y tiene un PerfilPaciente."""
@@ -83,10 +87,16 @@ def mis_medicamentos(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def mis_eventos(request):
+    # 💡 MEJORA DE UX: Traemos los eventos desde el inicio del día de hoy local.
+    # Así el paciente puede ver turnos matutinos aunque consulte la app por la tarde.
+    ahora_local = timezone.localtime(timezone.now())
+    inicio_hoy = ahora_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    
     eventos = EventoCalendario.objects.filter(
         paciente=request.user,
-        fecha_hora__gte=timezone.now()
-    )
+        fecha_hora__gte=inicio_hoy
+    ).order_by('fecha_hora')
+    
     return Response(EventoCalendarioSerializer(eventos, many=True).data)
 
 
@@ -115,7 +125,6 @@ def registrar_toma_api(request, medicamento_id):
     """Recibe la confirmación desde Flutter de que el paciente tomó el remedio"""
     user = request.user
 
-    # 🛡️ BLINDAJE EXPLÍCITO DE LA API: Si es un tutor, le bloqueamos la acción
     if es_tutor(user):
         return Response(
             {
@@ -125,14 +134,12 @@ def registrar_toma_api(request, medicamento_id):
             status=status.HTTP_403_FORBIDDEN
         )
 
-    # Si pasa el filtro, procedemos asegurando que el medicamento le pertenece estrictamente al usuario paciente
     med = get_object_or_404(Medicamento, pk=medicamento_id, paciente=user, activo=True)
 
     if med.stock_actual >= med.dosis_por_toma:
         med.stock_actual = max(0.0, float(med.stock_actual) - float(med.dosis_por_toma))
         med.save()
 
-        # Registrar la toma en el historial
         RegistroToma.objects.create(
             medicamento=med,
             paciente=user,

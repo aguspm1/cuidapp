@@ -6,19 +6,32 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from datetime import timedelta
 from django.core.paginator import Paginator
 from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma, Notificacion, PerfilTutor, HorarioToma
 from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm, PerfilTutorForm
 
 
-# ========== HELPERS REFACTORIZADOS ==========
+# ========== HELPERS REFACTORIZADOS (CORREGIDO) ==========
 
 def es_tutor(user):
-    """Un usuario es tutor si está autenticado y tiene un PerfilTutor explícito en la base de datos."""
+    """
+    Un usuario es tutor si está autenticado y tiene un PerfilTutor explícito.
+    🛡️ SOLUCIÓN AL LIMBO: Si no tiene PerfilTutor ni PerfilPaciente, asumimos que es un
+    tutor recién registrado y le creamos el perfil al vuelo para evitar bloqueos.
+    """
     if not user.is_authenticated:
         return False
-    return PerfilTutor.objects.filter(user=user).exists()
+        
+    if PerfilTutor.objects.filter(user=user).exists():
+        return True
+        
+    if not PerfilPaciente.objects.filter(user=user).exists():
+        PerfilTutor.objects.get_or_create(user=user)
+        return True
+        
+    return False
 
 def es_paciente(user):
     """Un usuario es paciente si está autenticado y tiene un PerfilPaciente explícito en la base de datos."""
@@ -27,10 +40,6 @@ def es_paciente(user):
     return PerfilPaciente.objects.filter(user=user).exists()
 
 def validar_acceso_tutor(request):
-    """
-    Verifica si el usuario es un tutor válido. 
-    Devuelve True si el acceso es válido, False si debe ser denegado.
-    """
     if not es_tutor(request.user):
         messages.error(request, "❌ Solo los tutores pueden realizar esta acción.")
         return False
@@ -39,13 +48,12 @@ def validar_acceso_tutor(request):
 def obtener_paciente_activo(request):
     """
     Devuelve (perfil, paciente_user) según el rol.
-    - Paciente: su propio perfil.
-    - Tutor: paciente seleccionado en sesión (valida que le pertenezca).
-    Soporta tanto tutores M2M como tutor FK legacy.
     """
-    perfil_propio = PerfilPaciente.objects.filter(user=request.user).first()
-    if perfil_propio:
-        return perfil_propio, request.user
+    # ✏️ ¡CORREGIDO AQUÍ! Agregado user=request.user para que Django pueda buscar bien
+    if es_paciente(request.user):
+        perfil_propio = PerfilPaciente.objects.filter(user=request.user).first()
+        if perfil_propio:
+            return perfil_propio, request.user
 
     paciente_id_sesion = request.session.get("paciente_seleccionado")
     if paciente_id_sesion:
@@ -55,7 +63,6 @@ def obtener_paciente_activo(request):
             models.Q(tutores=request.user) | models.Q(tutor=request.user)
         ).first()
         if perfil:
-            # Sincronizar tutores M2M si el FK existe pero M2M no
             if perfil.tutor == request.user and not perfil.tutores.filter(pk=request.user.pk).exists():
                 perfil.tutores.add(request.user)
             return perfil, perfil.user
@@ -65,7 +72,6 @@ def obtener_paciente_activo(request):
         models.Q(tutores=request.user) | models.Q(tutor=request.user)
     ).first()
     if perfil:
-        # Sincronizar automáticamente
         if perfil.tutor == request.user and not perfil.tutores.filter(pk=request.user.pk).exists():
             perfil.tutores.add(request.user)
         request.session["paciente_seleccionado"] = perfil.user.id
@@ -84,6 +90,7 @@ def registro(request):
             rol = form.cleaned_data.get('rol')
             if rol == 'paciente':
                 PerfilPaciente.objects.create(user=user)
+            # Nota: Si es tutor, el helper es_tutor se encargará de crearle el perfil en su primer acceso
             messages.success(request, '🎉 Registro exitoso. Ya podés iniciar sesión.')
             return redirect('login')
     else:
@@ -201,7 +208,6 @@ def dashboard(request):
 
 
 # ========== 3. GESTIÓN DE MEDICAMENTOS ==========
-
 @login_required
 def nuevo_medicamento(request):
     perfil, target_user = obtener_paciente_activo(request)
@@ -212,22 +218,31 @@ def nuevo_medicamento(request):
         if form.is_valid():
             medicamento = form.save(commit=False)
             medicamento.paciente = target_user
+            medicamento.activo = True 
             
             if medicamento.dosis_por_toma > medicamento.stock_actual or medicamento.dosis_por_toma > medicamento.stock_total:
                 messages.error(request, "❌ Error: La dosis no puede ser mayor que las unidades del stock.")
                 return render(request, 'core/nuevo_medicamento.html', {'form': form})
                 
+            # 💡 SINCRONIZACIÓN 1: Capturamos los horarios del POST
+            horarios_lista = []
+            i = 0
+            while True:
+                h_str = request.POST.get(f'horario_{i}', '').strip()
+                if h_str:
+                    horarios_lista.append(h_str)
+                    i += 1
+                else:
+                    break
+            
+            # Guardamos el string para que tasks.py y los templates viejos no rompan
+            medicamento.horario_fijo = ", ".join(horarios_lista)
             medicamento.save()
 
+            # Guardamos las relaciones en la nueva tabla para la API
             if medicamento.frecuencia_tipo == 'fijo':
-                i = 0
-                while True:
-                    h_str = request.POST.get(f'horario_{i}', '').strip()
-                    if h_str:
-                        HorarioToma.objects.create(medicamento=medicamento, hora=h_str)
-                        i += 1
-                    else:
-                        break
+                for h in horarios_lista:
+                    HorarioToma.objects.create(medicamento=medicamento, hora=h)
 
             messages.success(request, f"💊 {medicamento.nombre} guardado con éxito en el plan.")
             return redirect('dashboard')
@@ -238,6 +253,7 @@ def nuevo_medicamento(request):
 
     return render(request, 'core/nuevo_medicamento.html', {'form': form})
 
+
 @login_required
 def editar_medicamento(request, pk):
     if not validar_acceso_tutor(request):
@@ -247,22 +263,31 @@ def editar_medicamento(request, pk):
     medicamento = get_object_or_404(Medicamento, pk=pk, paciente=target_user)
 
     if request.method == 'POST':
-        horarios = []
-        i = 0
-        while True:
-            h = request.POST.get(f'horario_{i}', '').strip()
-            if h:
-                horarios.append(h)
-                i += 1
-            else:
-                break
-        post_data = request.POST.copy()
-        if horarios:
-            post_data['horario_fijo'] = ', '.join(horarios)
-
-        form = MedicamentoForm(post_data, instance=medicamento)
+        form = MedicamentoForm(request.POST, instance=medicamento)
         if form.is_valid():
-            form.save()
+            medicamento = form.save(commit=False)
+            
+            # 💡 SINCRONIZACIÓN 2: Recolectamos los horarios modificados
+            horarios_lista = []
+            i = 0
+            while True:
+                h = request.POST.get(f'horario_{i}', '').strip()
+                if h:
+                    horarios_lista.append(h)
+                    i += 1
+                else:
+                    break
+            
+            # Actualizamos el string plano
+            medicamento.horario_fijo = ", ".join(horarios_lista)
+            medicamento.save()
+            
+            # Limpiamos las relaciones viejas y recreamos las nuevas para mantener la DB limpia
+            medicamento.horarios.all().delete()
+            if medicamento.frecuencia_tipo == 'fijo':
+                for h in horarios_lista:
+                    HorarioToma.objects.create(medicamento=medicamento, hora=h)
+
             messages.success(request, '✏️ Medicamento actualizado.')
             return redirect('dashboard')
         else:
@@ -270,6 +295,7 @@ def editar_medicamento(request, pk):
     else:
         form = MedicamentoForm(instance=medicamento)
 
+    # El formulario lee el string separado por comas para dibujar los inputs en la web
     horarios_list = [h.strip() for h in medicamento.horario_fijo.split(',')] if medicamento.horario_fijo else []
     return render(request, 'core/editar_medicamento.html', {
         'form': form,
@@ -280,12 +306,10 @@ def editar_medicamento(request, pk):
 @login_required
 def registrar_toma(request, medicamento_id):
     if request.method == 'POST':
-        # 🛡️ BLINDAJE EXPLÍCITO DE NEGOCIO: Un tutor bajo ningún concepto confirma tomas reales
         if es_tutor(request.user):
             messages.error(request, "❌ Acción denegada: Solo el paciente puede confirmar que tomó su medicación.")
             return redirect('dashboard')
 
-        # 🔴 SEGURIDAD: Solo el dueño del medicamento puede registrar la toma
         medicamento = get_object_or_404(Medicamento, id=medicamento_id, paciente=request.user, activo=True)
         ahora = timezone.now()
         
@@ -297,15 +321,13 @@ def registrar_toma(request, medicamento_id):
         if ultima_toma:
             tiempo_transcurrido = ahora - ultima_toma.fecha_hora
 
-            # 🛡️ ESCUDO 1: Anti doble clic inmediato (10 minutos)
             if tiempo_transcurrido < timedelta(minutes=10):
                 messages.warning(request, f"¡Tranquilo! Ya se registró una toma de {medicamento.nombre} hace unos instantes.")
                 return redirect('dashboard')
 
-            # 🛡️ ESCUDO 2: Regulación por EVENTO (Máximo 1 por día calendario)
             if medicamento.frecuencia_tipo == 'evento':
                 hoy_inicio = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
-                hoy_fin = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
+                hoy_fin = bioreplace = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
                 ya_tomo_hoy = RegistroToma.objects.filter(
                     medicamento=medicamento,
                     paciente=request.user,
@@ -315,7 +337,6 @@ def registrar_toma(request, medicamento_id):
                     messages.warning(request, f"Ya registraste la toma diaria de {medicamento.nombre} correspondiente a hoy.")
                     return redirect('dashboard')
 
-            # 🛡️ ESCUDO 3: Regulación por INTERVALO (Tolerancia de 1 hora de anticipación)
             elif medicamento.frecuencia_tipo == 'intervalo':
                 horas_intervalo = medicamento.cada_cuantas_horas
                 proxima_esperada = ultima_toma.fecha_hora + timedelta(hours=horas_intervalo)
@@ -332,13 +353,11 @@ def registrar_toma(request, medicamento_id):
                     )
                     return redirect('dashboard')
 
-            # 🛡️ ESCUDO 4: Regulación por HORARIO FIJO (Ventana de bloqueo de 4 horas por turno)
             elif medicamento.frecuencia_tipo == 'fijo':
                 if tiempo_transcurrido < timedelta(hours=4):
                     messages.warning(request, f"Ya registraste la toma de {medicamento.nombre} correspondiente a este turno horario.")
                     return redirect('dashboard')
 
-        # --- PROCESO DE REGISTRO EXITOSO ---
         if medicamento.stock_actual > 0:
             medicamento.stock_actual -= 1
             medicamento.save()
@@ -347,14 +366,12 @@ def registrar_toma(request, medicamento_id):
                 medicamento=medicamento,
                 paciente=request.user,
                 fecha_hora=ahora,
-                amount_taken=medicamento.dosis_por_toma
+                cantidad_tomada=medicamento.dosis_por_toma 
             )
 
-            # 🔔 CREACIÓN DE NOTIFICACIÓN PARA EL TUTOR
             if hasattr(request.user, 'perfil_medico'):
                 tutores = request.user.perfil_medico.tutores.all()
                 nombre_paciente = request.user.get_full_name() or request.user.username
-                
                 for tutor in tutores:
                     Notificacion.objects.create(
                         usuario=tutor,
@@ -372,7 +389,6 @@ def registrar_toma(request, medicamento_id):
 
 @login_required
 def reponer_medicamento(request, medicamento_id):
-    # 🔴 SEGURIDAD: Solo un tutor asociado al paciente de este medicamento puede reponerlo
     med = get_object_or_404(Medicamento, id=medicamento_id, paciente__perfil_medico__tutores=request.user)
     
     if request.method == 'POST':
@@ -429,10 +445,13 @@ def calendario_eventos(request):
     
     eventos_data = []
     for ev in eventos:
+        # 💡 CONVERSIÓN EN GET: Llevamos la fecha a hora local antes de enviarla a FullCalendar
+        fecha_local = timezone.localtime(ev.fecha_hora) if ev.fecha_hora else None
+        
         eventos_data.append({
             'id': ev.id,
             'title': ev.titulo,
-            'start': ev.fecha_hora.isoformat(),
+            'start': fecha_local.isoformat() if fecha_local else "",
             'lugar': ev.lugar,
             'tipo': ev.tipo,
             'className': f'evento-tipo-{ev.tipo}'
@@ -440,7 +459,8 @@ def calendario_eventos(request):
 
     return render(request, 'core/calendario.html', {
         'eventos_json': json.dumps(eventos_data),
-        'paciente': target_user or target_user.username
+        'paciente': target_user,
+        'usuario_es_tutor': es_tutor(request.user)  # ✏️ CORRECCIÓN: Habilita el botón "+" en el HTML
     })
 
 @login_required
@@ -455,15 +475,24 @@ def nuevo_evento(request):
     if request.method == 'POST':
         titulo = request.POST.get('titulo')
         tipo = request.POST.get('tipo')
-        fecha_hora = request.POST.get('fecha_hora')
         lugar = request.POST.get('lugar')
         descripcion = request.POST.get('descripcion')
+        
+        fecha_hora_str = request.POST.get('fecha_hora')
+        fecha_hora_aware = None
+        if fecha_hora_str:
+            dt = parse_datetime(fecha_hora_str)
+            if dt and timezone.is_naive(dt):
+                fecha_hora_aware = timezone.make_aware(dt)
+            else:
+                fecha_hora_aware = dt
 
+        # ✏️ CORREGIDO: Ahora pasamos 'fecha_hora_aware' correctamente
         EventoCalendario.objects.create(
             paciente=target_user,
             titulo=titulo,
             tipo=tipo,
-            fecha_hora=fecha_hora,
+            fecha_hora=fecha_hora_aware, 
             lugar=lugar,
             descripcion=descripcion
         )
@@ -483,15 +512,31 @@ def editar_evento(request, pk):
     if request.method == 'POST':
         evento.titulo = request.POST.get('titulo')
         evento.tipo = request.POST.get('tipo')
-        evento.fecha_hora = request.POST.get('fecha_hora')
         evento.lugar = request.POST.get('lugar')
         evento.descripcion = request.POST.get('descripcion')
+        
+        # 💡 PARSEO SEGURO (POST): Evita que se sumen 3 horas extras en cada edición
+        fecha_hora_str = request.POST.get('fecha_hora')
+        if fecha_hora_str:
+            dt = parse_datetime(fecha_hora_str)
+            if dt and timezone.is_naive(dt):
+                evento.fecha_hora = timezone.make_aware(dt)
+            else:
+                evento.fecha_hora = dt
+                
         evento.save()
         messages.success(request, '✏️ Evento modificado.')
         return redirect('calendario')
 
-    fecha_iso = evento.fecha_hora.strftime('%Y-%m-%dT%H:%M') if evento.fecha_hora else ""
-    return render(request, 'core/editar_evento.html', {'evento': evento, 'fecha_iso': fecha_iso})
+    # 💡 LECTURA LOCAL (GET): Traducimos el UTC de la base de datos a hora de Argentina para el input HTML
+    fecha_local = timezone.localtime(evento.fecha_hora) if evento.fecha_hora else None
+    fecha_iso = fecha_local.strftime('%Y-%m-%dT%H:%M') if fecha_local else ""
+    
+    return render(request, 'core/editar_evento.html', {
+        'evento': evento, 
+        'fecha_iso': fecha_iso,
+        'usuario_es_tutor': es_tutor(request.user)
+    })
 
 @login_required
 def eliminar_evento(request, pk):
@@ -678,13 +723,22 @@ def subir_foto(request):
 
 @login_required
 def cargar_dato_medicion(request, foto_id):
-    if es_tutor(request.user):
-        messages.error(request, "⚠️ Los tutores no tienen permisos para cargar mediciones.")
-        return redirect('fotos_mediciones')
-
     foto = get_object_or_404(FotoDocumento, id=foto_id)
-    perfil, target_user = obtener_paciente_activo(request)
+    perfil = PerfilPaciente.objects.filter(user=foto.paciente).first()
     
+    # 🛡️ BLINDAJE DE SEGURIDAD INTERMEDIO (IDOR): Reemplaza el bloqueo anterior
+    if es_tutor(request.user):
+        # Si es tutor, validamos que pertenezca a la red de tutores de este paciente específico
+        if not perfil or not perfil.tutores.filter(pk=request.user.pk).exists():
+            messages.error(request, "❌ No tienes permisos sobre el perfil de este paciente.")
+            return redirect('fotos_mediciones')
+    else:
+        # Si es paciente, validamos que la foto que intenta procesar sea estrictamente suya
+        if foto.paciente != request.user:
+            messages.error(request, "❌ No tienes acceso a este documento.")
+            return redirect('fotos_mediciones')
+
+    # Conseguir los controles permitidos del perfil del paciente
     controles_permitidos = []
     if perfil:
         if perfil.requiere_control_presion: controles_permitidos.append('presion')

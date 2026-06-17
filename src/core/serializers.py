@@ -23,7 +23,11 @@ class MedicamentoSerializer(serializers.ModelSerializer):
     tomas_restantes    = serializers.IntegerField(read_only=True)
     fecha_inicio = serializers.DateField(format="%Y-%m-%d", allow_null=True)
     fecha_fin = serializers.DateField(format="%Y-%m-%d", allow_null=True)
-    horario_fijo = serializers.TimeField(format="%H:%M", allow_null=True)
+    
+    # 💡 DOBLE BLINDAJE: Mandamos el array moderno y mantenemos el string viejo por si las moscas
+    horarios = serializers.SerializerMethodField()
+    horario_fijo = serializers.SerializerMethodField()
+    
     presentacion_display = serializers.CharField(source='get_tipo_presentacion_display', read_only=True)
     frecuencia_display = serializers.CharField(source='get_frecuencia_tipo_display', read_only=True)
 
@@ -31,13 +35,20 @@ class MedicamentoSerializer(serializers.ModelSerializer):
         model = Medicamento
         fields = [
             'id', 'nombre', 'tipo_presentacion', 'presentacion_display',
-            'unidad_medida', 'dosis_por_toma',
+            'unidad_medida', 'unidad_medida', 'dosis_por_toma',
             'frecuencia_tipo', 'frecuencia_display',
-            'horario_fijo', 'evento_toma', 'cada_cuantas_horas',
+            'horarios', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas', 
             'duracion_tipo', 'fecha_inicio', 'fecha_fin',
             'stock_actual', 'stock_total', 'umbral_stock_minimo',
             'activo', 'tiene_stock_bajo', 'porcentaje_stock', 'tomas_restantes',
         ]
+
+    # Devuelve un array nativo: ["08:00", "14:00"]
+    def get_horarios(self, obj):
+        return [h.hora.strftime("%H:%M") for h in obj.horarios.all()]
+
+    def get_horario_fijo(self, obj):
+        return ", ".join([h.hora.strftime("%H:%M") for h in obj.horarios.all()])
 
 class EventoCalendarioSerializer(serializers.ModelSerializer):
     class Meta:
