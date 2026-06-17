@@ -158,7 +158,7 @@ def registrar_toma_api(request, medicamento_id):
 @parser_classes([MultiPartParser, FormParser])
 def subir_foto_api(request):
     """Recibe la imagen de una receta o medición desde la cámara del celular en Flutter"""
-    serializer = FotoDocumentoSerializer(data=request.data)
+    serializer = FotoDocumentoSerializer(data=request.data, context={'request': request})
     
     if serializer.is_valid():
         serializer.save(paciente=request.user)

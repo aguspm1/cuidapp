@@ -359,7 +359,7 @@ def registrar_toma(request, medicamento_id):
                     return redirect('dashboard')
 
         if medicamento.stock_actual > 0:
-            medicamento.stock_actual -= 1
+            medicamento.stock_actual = max(0, float(medicamento.stock_actual) - float(medicamento.dosis_por_toma))
             medicamento.save()
 
             RegistroToma.objects.create(
