@@ -15,12 +15,28 @@
             <div class="form-group mb-20">
                 <label>{{ form.telefono.label }}</label>
                 {{ form.telefono }}
+                {% if form.telefono.errors %}
+                    <div class="text-danger mt-10" style="font-size: 0.85rem; color: #e74c3c;">
+                        {{ form.telefono.errors.0 }}
+                    </div>
+                {% endif %}
             </div>
 
             <div class="form-group mb-30">
                 <label>{{ form.parentesco.label }}</label>
                 {{ form.parentesco }}
+                {% if form.parentesco.errors %}
+                    <div class="text-danger mt-10" style="font-size: 0.85rem; color: #e74c3c;">
+                        {{ form.parentesco.errors.0 }}
+                    </div>
+                {% endif %}
             </div>
+
+            {% if form.non_field_errors %}
+                <div class="mensaje-alerta error mb-20">
+                    {{ form.non_field_errors.0 }}
+                </div>
+            {% endif %}
 
             <button type="submit" class="btn-primary" style="width: 100%;">💾 Guardar cambios</button>
         </form>

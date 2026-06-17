@@ -38,9 +38,10 @@ class PerfilPacienteForm(forms.ModelForm):
             'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
             'telefono_emergencia': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ej: +54 9 11 1234-5678',
-                'pattern': r'[\+\d\s\-\(\)]{7,20}',
-                'title': 'Solo números, espacios, guiones y paréntesis',
+                'placeholder': 'Ej: +5491112345678',
+                # 💡 ACTUALIZADO: Se agregaron ^ y $ para forzar validación estricta
+                'pattern': r'^\+[1-9]\d{10,14}$', 
+                'title': 'Debe empezar con + seguido de los números, sin espacios ni símbolos',
             }),
             'medico_cabecera': forms.TextInput(attrs={'class': 'form-control'}),
             'obra_social': forms.TextInput(attrs={'class': 'form-control'}),
@@ -157,7 +158,8 @@ class PerfilTutorForm(forms.ModelForm):
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: +54 9 11 1234-5678',
-                'pattern': r'[\+\d\s\-\(\)]{7,20}',
+                # 💡 ACTUALIZADO: Se agregaron ^ y $ para forzar validación estricta
+                'pattern': r'^\+?[\d\s\-\(\)]{7,20}$',
                 'title': 'Solo números, espacios, guiones y paréntesis',
             }),
             'parentesco': forms.TextInput(attrs={

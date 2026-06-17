@@ -44,7 +44,7 @@
                             
                             {% for tutor in tutores %}
                                 <option value="{{ tutor.get_full_name }}" 
-                                        data-telefono="{{ tutor.perfiltutor.telefono|default:'' }}"
+                                        data-telefono="{{ tutor.perfil_tutor.telefono|default:'' }}"
                                         {% if perfil.contacto_emergencia == tutor.get_full_name %}selected{% endif %}>
                                     {{ tutor.get_full_name }} (Tutor)
                                 </option>

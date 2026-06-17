@@ -4,8 +4,8 @@ from django.core.validators import FileExtensionValidator
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 
 telefono_validator = RegexValidator(
-    regex=r'^\+?[\d\s\-\(\)]{7,20}$',
-    message='Ingresá un número de teléfono válido. Solo números, espacios, guiones y paréntesis.'
+    regex=r'^\+[1-9]\d{10,14}$',
+    message='Formato inválido. Ingresá el símbolo + seguido del código de país y tu número, sin espacios ni guiones (Ej: +5491112345678).'
 )
 
 
