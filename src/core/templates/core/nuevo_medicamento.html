@@ -61,17 +61,17 @@
             <div class="acordeon-content" style="padding: 25px; display: none; border-top: 1px solid var(--gris-borde);">
                 <div class="form-group mb-20">
                     <label>Cantidad por envase/caja nueva (Stock Total)</label>
-                    <input type="number" min="1" name="stock_total" class="form-control" required placeholder="Ej: 30">
+                    <input type="number" min="1" name="stock_total" id="input-stock-total" class="form-control" required placeholder="Ej: 30" autocomplete="off">
                 </div>
 
                 <div class="form-row-2 mb-10">
                     <div>
                         <label class="d-block mb-10 fw-bold">Stock Inicial Actual</label>
-                        <input type="number" min="0" name="stock_actual" class="form-control" required placeholder="Ej: 10">
+                        <input type="number" min="0" name="stock_actual" id="input-stock-actual" class="form-control" required placeholder="Ej: 30" autocomplete="off">
                     </div>
                     <div>
                         <label class="d-block mb-10 fw-bold">Alerta Mínima</label>
-                        <input type="number" min="0" name="umbral_stock_minimo" class="form-control" required placeholder="Ej: 5">
+                        <input type="number" min="0" name="umbral_stock_minimo" class="form-control" required placeholder="Ej: 5" autocomplete="off">
                     </div>
                 </div>
                 <small class="text-muted d-block mt-10">Emitiremos una alerta en el panel de inicio cuando las existencias queden por debajo de este umbral.</small>
