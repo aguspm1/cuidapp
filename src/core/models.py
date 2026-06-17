@@ -1,7 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+
+telefono_validator = RegexValidator(
+    regex=r'^\+?[\d\s\-\(\)]{7,20}$',
+    message='Ingresá un número de teléfono válido. Solo números, espacios, guiones y paréntesis.'
+)
 
 
 # ============================================================
@@ -10,7 +15,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class PerfilTutor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_tutor')
-    telefono = models.CharField(max_length=20, verbose_name="Teléfono")
+    telefono = models.CharField(max_length=20, verbose_name="Teléfono", validators=[telefono_validator], blank=True)
     parentesco = models.CharField(max_length=50, verbose_name="Relación con el paciente")
 
 class PerfilPaciente(models.Model):
@@ -22,7 +27,7 @@ class PerfilPaciente(models.Model):
     grupo_sanguineo      = models.CharField(max_length=5, blank=True)
     alergias             = models.TextField(blank=True, verbose_name='Alergias Conocidas')
     contacto_emergencia  = models.CharField(max_length=100, blank=True)
-    telefono_emergencia  = models.CharField(max_length=20, blank=True)
+    telefono_emergencia  = models.CharField(max_length=20, blank=True, validators=[telefono_validator])
     medico_cabecera      = models.CharField(max_length=100, blank=True)
     obra_social          = models.CharField(max_length=100, blank=True, verbose_name='Obra Social')
     plan                 = models.CharField(max_length=100, blank=True, verbose_name='Plan')

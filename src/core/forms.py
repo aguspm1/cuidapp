@@ -36,7 +36,12 @@ class PerfilPacienteForm(forms.ModelForm):
             ),
             'alergias': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefono_emergencia': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: +54 9 11 1234-5678',
+                'pattern': r'[\+\d\s\-\(\)]{7,20}',
+                'title': 'Solo números, espacios, guiones y paréntesis',
+            }),
             'medico_cabecera': forms.TextInput(attrs={'class': 'form-control'}),
             'obra_social': forms.TextInput(attrs={'class': 'form-control'}),
             'plan': forms.TextInput(attrs={'class': 'form-control'}),
@@ -150,8 +155,10 @@ class PerfilTutorForm(forms.ModelForm):
         fields = ['telefono', 'parentesco']
         widgets = {
             'telefono': forms.TextInput(attrs={
-                'class': 'form-control', 
-                'placeholder': 'Ej: 11 1234-5678'
+                'class': 'form-control',
+                'placeholder': 'Ej: +54 9 11 1234-5678',
+                'pattern': r'[\+\d\s\-\(\)]{7,20}',
+                'title': 'Solo números, espacios, guiones y paréntesis',
             }),
             'parentesco': forms.TextInput(attrs={
                 'class': 'form-control', 
