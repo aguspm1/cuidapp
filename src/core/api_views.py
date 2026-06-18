@@ -6,6 +6,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
+#Agrego los datos del dispositivo al final 
+
 from .models import (
     PerfilPaciente, 
     Medicamento, 
@@ -13,7 +15,8 @@ from .models import (
     Notificacion, 
     RegistroToma, 
     FotoDocumento,
-    PerfilTutor
+    PerfilTutor,
+    DatoDispositivo
 )
 
 # IMPORTACIÓN DE SERIALIZADORES
@@ -110,6 +113,22 @@ def mis_notificaciones(request):
     )
     return Response(NotificacionSerializer(notificaciones, many=True).data)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mis_pacientes_api(request):
+    """Devuelve la lista de pacientes vinculados al tutor autenticado."""
+    user = request.user
+    if not es_tutor(user):
+        return Response(
+            {'status': 'error', 'mensaje': 'Solo los cuidadores pueden acceder a esta lista.'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Buscamos los pacientes que tienen a este usuario en su lista ManyToMany 'tutores'
+    pacientes = PerfilPaciente.objects.filter(tutores=user)
+    
+    return Response(PerfilPacienteSerializer(pacientes, many=True).data)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -168,3 +187,16 @@ def subir_foto_api(request):
         )
         
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#Agrego datos de dispositivo
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def registrar_dato_dispositivo(request):
+    dato = DatoDispositivo.objects.create(
+        paciente      = request.user,
+        bateria       = request.data.get('bateria', 0),
+        tipo_conexion = request.data.get('tipo_conexion', ''),
+        latitud       = request.data.get('latitud'),
+        longitud      = request.data.get('longitud'),
+    )
+    return Response({'ok': True, 'id': dato.id}, status=status.HTTP_201_CREATED)

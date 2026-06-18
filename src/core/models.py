@@ -244,3 +244,16 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"[{self.get_tipo_display()}] {self.titulo} - {self.usuario.username}"
+
+    # Agrego una clase para los datos recolectados del celular
+class DatoDispositivo(models.Model):
+    paciente       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datos_dispositivo')
+    bateria        = models.IntegerField()
+    tipo_conexion  = models.CharField(max_length=50)
+    latitud        = models.FloatField(null=True, blank=True)
+    longitud       = models.FloatField(null=True, blank=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_registro']
+        verbose_name = 'Dato de dispositivo'
