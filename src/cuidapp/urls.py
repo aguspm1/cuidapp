@@ -63,5 +63,10 @@ urlpatterns = [
     path('api/documentos/subir/', api_views.subir_foto_api, name='api_subir_foto'),
     path('api/v1/dispositivo/', api_views.registrar_dato_dispositivo, name='api_dispositivo'),
 
+    # ↓ NUEVO: detalle de un paciente puntual, para la vista del cuidador
+    path('api/v1/pacientes/<int:paciente_id>/dispositivo/', api_views.detalle_paciente_dispositivo, name='api_paciente_dispositivo'),
+    path('api/v1/pacientes/<int:paciente_id>/fotos/', api_views.detalle_paciente_fotos, name='api_paciente_fotos'),
+    path('api/v1/pacientes/<int:paciente_id>/medicamentos/', api_views.detalle_paciente_medicamentos, name='api_paciente_medicamentos'),
+
 # Sirve archivos de media (imágenes/PDFs subidos) en modo desarrollo
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

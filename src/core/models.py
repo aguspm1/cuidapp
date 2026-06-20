@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.utils import timezone
+from datetime import timedelta
 
 telefono_validator = RegexValidator(
     regex=r'^\+[1-9]\d{10,14}$',
@@ -110,6 +112,67 @@ class Medicamento(models.Model):
         if self.dosis_por_toma == 0:
             return 0
         return int(self.stock_actual / self.dosis_por_toma)
+
+    @property
+    def puede_tomar_ahora(self):
+        """
+        Decide si el botón de 'Ya la tomé' debe estar habilitado.
+        - frecuencia 'intervalo': hay que esperar cada_cuantas_horas desde la última toma.
+        - frecuencia 'fijo': no se puede repetir la toma dentro de la misma ventana horaria
+          (entre un horario fijo y el siguiente).
+        - 'evento' u otros: una sola toma permitida por día.
+        """
+        ahora = timezone.localtime(timezone.now())
+        ultima = self.registros_toma.first()  # ordering=['-fecha_hora']
+
+        if self.frecuencia_tipo == 'intervalo' and self.cada_cuantas_horas:
+            if not ultima:
+                return True
+            proxima = ultima.fecha_hora + timedelta(hours=self.cada_cuantas_horas)
+            return ahora >= proxima
+
+        if self.frecuencia_tipo == 'fijo':
+            horarios = sorted([h.hora for h in self.horarios.all()])
+            if not horarios:
+                return True
+            horario_actual = None
+            for h in horarios:
+                if h <= ahora.time():
+                    horario_actual = h
+            if horario_actual is None:
+                # Todavía no llegó el primer horario del día
+                return True
+            inicio_ventana = ahora.replace(
+                hour=horario_actual.hour, minute=horario_actual.minute,
+                second=0, microsecond=0
+            )
+            return not self.registros_toma.filter(fecha_hora__gte=inicio_ventana).exists()
+
+        # 'evento' u otra frecuencia: máximo una toma por día
+        inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+        return not self.registros_toma.filter(fecha_hora__gte=inicio_dia).exists()
+
+    @property
+    def proxima_toma_texto(self):
+        """Texto legible de cuándo se vuelve a habilitar el botón."""
+        if self.puede_tomar_ahora:
+            return None
+
+        ahora = timezone.localtime(timezone.now())
+        ultima = self.registros_toma.first()
+
+        if self.frecuencia_tipo == 'intervalo' and self.cada_cuantas_horas and ultima:
+            proxima = ultima.fecha_hora + timedelta(hours=self.cada_cuantas_horas)
+            return timezone.localtime(proxima).strftime('%H:%M')
+
+        if self.frecuencia_tipo == 'fijo':
+            horarios = sorted([h.hora for h in self.horarios.all()])
+            futuros = [h for h in horarios if h > ahora.time()]
+            if futuros:
+                return futuros[0].strftime('%H:%M')
+            return 'mañana'
+
+        return 'mañana'
 
 
 class RegistroToma(models.Model):
@@ -245,15 +308,18 @@ class Notificacion(models.Model):
     def __str__(self):
         return f"[{self.get_tipo_display()}] {self.titulo} - {self.usuario.username}"
 
-    # Agrego una clase para los datos recolectados del celular
 class DatoDispositivo(models.Model):
-    paciente       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datos_dispositivo')
-    bateria        = models.IntegerField()
-    tipo_conexion  = models.CharField(max_length=50)
-    latitud        = models.FloatField(null=True, blank=True)
-    longitud       = models.FloatField(null=True, blank=True)
+    paciente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datos_dispositivo')
+    bateria = models.IntegerField(default=0, help_text="Porcentaje de batería (0-100)")
+    tipo_conexion = models.CharField(max_length=50, blank=True, help_text="Ej: wifi, 4g, none")
+    latitud = models.FloatField(null=True, blank=True)
+    longitud = models.FloatField(null=True, blank=True)
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-fecha_registro']
-        verbose_name = 'Dato de dispositivo'
+        verbose_name = 'Dato de Dispositivo'
+        verbose_name_plural = 'Datos de Dispositivos'
+
+    def __str__(self):
+        return f"Dispositivo de {self.paciente.username} ({self.bateria}%)"

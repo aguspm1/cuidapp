@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_apscheduler',
     'rest_framework',
+    'cloudinary',
     'rest_framework_simplejwt',
     'corsheaders',
     'core',
@@ -153,3 +155,20 @@ REST_FRAMEWORK = {
 ALLOWED_HOSTS = ['*']
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dela6rwit',
+    'API_KEY': '753363425638528',
+    'API_SECRET': 'DOItTQ2oeAvXGFqIy2Ym9mNLkls',
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+

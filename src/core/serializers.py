@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento
+from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento, DatoDispositivo
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,6 +21,8 @@ class MedicamentoSerializer(serializers.ModelSerializer):
     tiene_stock_bajo   = serializers.BooleanField(read_only=True)
     porcentaje_stock   = serializers.IntegerField(read_only=True)
     tomas_restantes    = serializers.IntegerField(read_only=True)
+    puede_tomar_ahora  = serializers.BooleanField(read_only=True)
+    proxima_toma_texto = serializers.CharField(read_only=True)
     fecha_inicio = serializers.DateField(format="%Y-%m-%d", allow_null=True)
     fecha_fin = serializers.DateField(format="%Y-%m-%d", allow_null=True)
     
@@ -35,12 +37,13 @@ class MedicamentoSerializer(serializers.ModelSerializer):
         model = Medicamento
         fields = [
             'id', 'nombre', 'tipo_presentacion', 'presentacion_display',
-            'unidad_medida', 'unidad_medida', 'dosis_por_toma',
+            'unidad_medida', 'dosis_por_toma',
             'frecuencia_tipo', 'frecuencia_display',
             'horarios', 'horario_fijo', 'evento_toma', 'cada_cuantas_horas', 
             'duracion_tipo', 'fecha_inicio', 'fecha_fin',
             'stock_actual', 'stock_total', 'umbral_stock_minimo',
             'activo', 'tiene_stock_bajo', 'porcentaje_stock', 'tomas_restantes',
+            'puede_tomar_ahora', 'proxima_toma_texto',
         ]
 
     # Devuelve un array nativo: ["08:00", "14:00"]
@@ -80,3 +83,9 @@ class FotoDocumentoSerializer(serializers.ModelSerializer):
         if obj.imagen and request:
             return request.build_absolute_uri(obj.imagen.url)
         return None
+
+
+class DatoDispositivoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DatoDispositivo
+        fields = ['id', 'bateria', 'tipo_conexion', 'latitud', 'longitud', 'fecha_registro']
