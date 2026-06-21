@@ -17,7 +17,8 @@ from .models import (
     FotoDocumento,
     PerfilTutor,
     DatoDispositivo,
-    Mensaje
+    Mensaje,
+    DatoMedicion
 )
 
 # IMPORTACIÓN DE SERIALIZADORES
@@ -28,7 +29,8 @@ from .serializers import (
     NotificacionSerializer,
     FotoDocumentoSerializer,
     DatoDispositivoSerializer,
-    MensajeSerializer
+    MensajeSerializer,
+    DatoMedicionSerializer
 )
 
 
@@ -434,3 +436,53 @@ def chat_mensajes(request, otro_id):
     mensajes.exclude(remitente=user).filter(leido=False).update(leido=True)
 
     return Response(MensajeSerializer(mensajes, many=True, context={'request': request}).data)
+
+from .models import DatoMedicion
+from .serializers import DatoMedicionSerializer
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def extraer_dato_medicion(request, foto_id):
+    """El cuidador extrae un dato numérico (presión/glucosa) a partir de una foto subida por el abuelo."""
+    foto = get_object_or_404(FotoDocumento, pk=foto_id)
+    perfil = _validar_tutor_de(request, foto.paciente_id)
+    
+    if not perfil:
+        return Response({'status': 'error', 'mensaje': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+    tipo = request.data.get('tipo')
+    valor_1 = request.data.get('valor_1')
+    valor_2 = request.data.get('valor_2') # Opcional (ej. presión diastólica)
+    
+    if not tipo or not valor_1:
+        return Response({'status': 'error', 'mensaje': 'El tipo y el valor 1 son obligatorios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        DatoMedicion.objects.create(
+            paciente_id=foto.paciente_id,
+            foto=foto,
+            tipo=tipo,
+            valor_1=float(valor_1),
+            valor_2=float(valor_2) if valor_2 else None,
+            observaciones=request.data.get('observaciones', '')
+        )
+        
+        # Opcional: Marcar la foto como procesada automáticamente
+        foto.procesada = True
+        foto.save()
+        
+        return Response({'status': 'ok', 'mensaje': 'Medición guardada correctamente.'})
+    except ValueError:
+        return Response({'status': 'error', 'mensaje': 'Los valores deben ser numéricos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def historial_mediciones_paciente(request, paciente_id):
+    """Devuelve el historial numérico para armar los gráficos."""
+    perfil = _validar_tutor_de(request, paciente_id)
+    if not perfil:
+        return Response({'status': 'error', 'mensaje': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+    mediciones = DatoMedicion.objects.filter(paciente_id=paciente_id).order_by('fecha_registro')
+    return Response(DatoMedicionSerializer(mediciones, many=True).data)

@@ -74,6 +74,9 @@ urlpatterns = [
     path('api/v1/pacientes/<int:paciente_id>/medicamentos/', api_views.detalle_paciente_medicamentos, name='api_paciente_medicamentos'),
     path('api/v1/fotos/<int:foto_id>/revisar/', api_views.marcar_foto_revisada, name='api_marcar_foto_revisada'),
 
+    path('api/v1/pacientes/<int:paciente_id>/historial-mediciones/', api_views.historial_mediciones_paciente, name='api_historial_mediciones'),
+    path('api/v1/fotos/<int:foto_id>/extraer-dato/', api_views.extraer_dato_medicion, name='api_extraer_dato'),
+
     path('api/v1/', include(router.urls)),
 
 # Sirve archivos de media (imágenes/PDFs subidos) en modo desarrollo

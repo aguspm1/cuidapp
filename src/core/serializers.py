@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento, DatoDispositivo, Mensaje
+from core.models import PerfilPaciente, Medicamento, EventoCalendario, Notificacion, FotoDocumento, DatoDispositivo, Mensaje, DatoMedicion
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -140,3 +140,10 @@ class MensajeSerializer(serializers.ModelSerializer):
 
     def get_remitente_nombre(self, obj):
         return obj.remitente.get_full_name() or obj.remitente.username
+
+class DatoMedicionSerializer(serializers.ModelSerializer):
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    
+    class Meta:
+        model = DatoMedicion
+        fields = ['id', 'tipo', 'tipo_display', 'valor_1', 'valor_2', 'fecha_registro', 'observaciones', 'foto']
