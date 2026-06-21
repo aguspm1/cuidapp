@@ -162,16 +162,11 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
 # dj3-cloudinary-storage (versión vieja) todavía lee esta variable "legacy"
 # en vez del diccionario STORAGES de arriba. La dejamos en sincro con
 # STORAGES["staticfiles"] para que su comando de collectstatic no explote.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# El panel "browsable" de Django REST Framework trae un bootstrap.min.css
-# que referencia fuentes .eot que no vienen incluidas en el paquete.
-# Sin esto, collectstatic explota por un archivo que no afecta nada funcional.
-WHITENOISE_MANIFEST_STRICT = False
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
