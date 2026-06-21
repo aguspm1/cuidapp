@@ -121,10 +121,9 @@ class Medicamento(models.Model):
     def puede_tomar_ahora(self):
         """
         Decide si el botón de 'Ya la tomé' debe estar habilitado.
-        - frecuencia 'intervalo': hay que esperar cada_cuantas_horas desde la última toma.
-        - frecuencia 'fijo': no se puede repetir la toma dentro de la misma ventana horaria
-          (entre un horario fijo y el siguiente).
-        - 'evento' u otros: una sola toma permitida por día.
+        - frecuencia 'intervalo': hay que esperar cada_cuantas_horas.
+        - frecuencia 'fijo': no se puede repetir dentro de la misma ventana horaria.
+        - frecuencia 'evento': respeta la hora real del evento (ej: noche).
         """
         ahora = timezone.localtime(timezone.now())
         ultima = self.registros_toma.first()  # ordering=['-fecha_hora']
@@ -136,23 +135,66 @@ class Medicamento(models.Model):
             return ahora >= proxima
 
         if self.frecuencia_tipo == 'fijo':
+            # 💡 RESPALDO: Si no hay objetos en la relación, parseamos el texto de horario_fijo
             horarios = sorted([h.hora for h in self.horarios.all()])
+            if not horarios and self.horario_fijo:
+                from datetime import datetime
+                for part in self.horario_fijo.split():
+                    try:
+                        clean_part = part.replace('hs', '').strip()[:5]
+                        horarios.append(datetime.strptime(clean_part, '%H:%M').time())
+                    except ValueError:
+                        continue
+                horarios.sort()
+
             if not horarios:
                 return True
+
             horario_actual = None
             for h in horarios:
                 if h <= ahora.time():
                     horario_actual = h
+            
             if horario_actual is None:
-                # Todavía no llegó el primer horario del día
-                return True
-            inicio_ventana = ahora.replace(
-                hour=horario_actual.hour, minute=horario_actual.minute,
-                second=0, microsecond=0
-            )
+                # Si todavía no llegó el primer horario del día (ej: son las 7am y el primero es a las 8am),
+                # la ventana activa es el ÚLTIMO horario del día anterior.
+                horario_actual = horarios[-1]
+                inicio_ventana = ahora.replace(
+                    hour=horario_actual.hour, minute=horario_actual.minute,
+                    second=0, microsecond=0
+                ) - timedelta(days=1)
+            else:
+                inicio_ventana = ahora.replace(
+                    hour=horario_actual.hour, minute=horario_actual.minute,
+                    second=0, microsecond=0
+                )
+
             return not self.registros_toma.filter(fecha_hora__gte=inicio_ventana).exists()
 
-        # 'evento' u otra frecuencia: máximo una toma por día
+        # Restricción estricta de horarios para eventos
+        if self.frecuencia_tipo == 'evento' and self.evento_toma:
+            inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+            if self.registros_toma.filter(fecha_hora__gte=inicio_dia).exists():
+                return False
+                
+            texto_evento = self.evento_toma.lower()
+            hora_evento = None
+            
+            if 'desayuno' in texto_evento or 'levantar' in texto_evento or 'mañana' in texto_evento:
+                hora_evento = 9
+            elif 'almuerzo' in texto_evento or 'mediod' in texto_evento:
+                hora_evento = 13
+            elif 'cena' in texto_evento:
+                hora_evento = 21
+            elif 'dormir' in texto_evento or 'acostar' in texto_evento or 'noche' in texto_evento:
+                hora_evento = 23
+            
+            if hora_evento is not None:
+                if ahora.hour < (hora_evento - 1):
+                    return False
+            
+            return True
+
         inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
         return not self.registros_toma.filter(fecha_hora__gte=inicio_dia).exists()
 
@@ -167,15 +209,46 @@ class Medicamento(models.Model):
 
         if self.frecuencia_tipo == 'intervalo' and self.cada_cuantas_horas and ultima:
             proxima = ultima.fecha_hora + timedelta(hours=self.cada_cuantas_horas)
-            return timezone.localtime(proxima).strftime('%H:%M')
+            return timezone.localtime(proxima).strftime('%H:%M') + " hs"
 
         if self.frecuencia_tipo == 'fijo':
+            # 💡 El mismo respaldo para el texto visual
             horarios = sorted([h.hora for h in self.horarios.all()])
+            if not horarios and self.horario_fijo:
+                from datetime import datetime
+                for part in self.horario_fijo.split():
+                    try:
+                        clean_part = part.replace('hs', '').strip()[:5]
+                        horarios.append(datetime.strptime(clean_part, '%H:%M').time())
+                    except ValueError:
+                        continue
+                horarios.sort()
+
             futuros = [h for h in horarios if h > ahora.time()]
             if futuros:
-                return futuros[0].strftime('%H:%M')
+                return futuros[0].strftime('%H:%M') + " hs"
+            
+            if horarios:
+                return f"mañana a las {horarios[0].strftime('%H:%M')} hs"
             return 'mañana'
 
+        if self.frecuencia_tipo == 'evento' and self.evento_toma:
+            texto_evento = self.evento_toma.lower()
+            hora_evento = None
+            
+            if 'desayuno' in texto_evento or 'levantar' in texto_evento or 'mañana' in texto_evento:
+                hora_evento = 9
+            elif 'almuerzo' in texto_evento or 'mediod' in texto_evento:
+                hora_evento = 13
+            elif 'cena' in texto_evento:
+                hora_evento = 21
+            elif 'dormir' in texto_evento or 'acostar' in texto_evento or 'noche' in texto_evento:
+                hora_evento = 23
+            
+            if hora_evento is not None:
+                if ahora.hour < (hora_evento - 1):
+                    return f"{hora_evento}:00 hs"
+                    
         return 'mañana'
 
 

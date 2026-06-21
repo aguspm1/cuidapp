@@ -2,7 +2,8 @@ import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events
 from django.utils import timezone
-from .tasks import motor_global_notificaciones
+# 💡 ACTUALIZADO: Importamos el motor global y el nuevo auditor de atrasos
+from .tasks import motor_global_notificaciones, auditar_tomas_atrasadas
 
 def start():
     # Evitamos que el reloj arranque si estás corriendo migraciones o tests
@@ -12,16 +13,26 @@ def start():
     scheduler = BackgroundScheduler(timezone=timezone.get_current_timezone())
     scheduler.add_jobstore(DjangoJobStore(), "default")
 
-    # Configuramos la tarea para que se ejecute cada 1 minuto
+    # Tarea 1: Generador de alertas automáticas inmediatas (Meds a horario y eventos)
     scheduler.add_job(
         motor_global_notificaciones,
         trigger='interval',
-        minutes=1,  # Podés cambiar esto a 'hours=1' en producción si querés
+        minutes=1,
         id='motor_notificaciones',
+        max_instances=1,
+        replace_existing=True,
+    )
+
+    # 💡 Tarea 2: NUEVA - Escáner de tomas atrasadas por más de 1 hora
+    scheduler.add_job(
+        auditar_tomas_atrasadas,
+        trigger='interval',
+        minutes=1,  # Revisa minuto a minuto si alguien acaba de cumplir la hora de atraso
+        id='auditor_tomas_atrasadas',
         max_instances=1,
         replace_existing=True,
     )
 
     register_events(scheduler)
     scheduler.start()
-    print("⏳ [Scheduler] Iniciado correctamente. Revisando alertas cada 1 minuto.")
+    print("⏳ [Scheduler] Iniciado correctamente. Monitoreando alertas y olvidos minuto a minuto.")

@@ -280,12 +280,20 @@
                                         </form>
                                     {% else %}
                                         {% if med.stock_actual > 0 %}
-                                        <form method="POST" action="{% url 'registrar_toma' med.id %}" class="m-0">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn-primary w-auto" style="padding: 8px 15px; background: #28a745;">✅ Tomé</button>
-                                        </form>
+                                            
+                                            {% if med.puede_tomar_ahora %}
+                                                <form method="POST" action="{% url 'registrar_toma' med.id %}" class="m-0">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-primary w-auto" style="padding: 8px 15px; background: #28a745;">✅ Tomé</button>
+                                                </form>
+                                            {% else %}
+                                                <button class="btn-cancelar w-auto" style="padding: 8px 15px; cursor:not-allowed;" title="Todavía no es la hora de la toma" disabled>
+                                                    ⏳ Próx: {{ med.proxima_toma_texto }}
+                                                </button>
+                                            {% endif %}
+                                            
                                         {% else %}
-                                        <button class="btn-cancelar w-auto" style="padding: 8px 15px; cursor:not-allowed;" disabled>Sin stock</button>
+                                            <button class="btn-cancelar w-auto" style="padding: 8px 15px; cursor:not-allowed;" disabled>Sin stock</button>
                                         {% endif %}
                                     {% endif %}
                                 </div>

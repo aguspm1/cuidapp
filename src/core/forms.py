@@ -80,7 +80,8 @@ class MedicamentoForm(forms.ModelForm):
             'dosis_por_toma': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5', 'placeholder': 'Ej: 1, 15, 5.5', 'min': '0'}),
             'frecuencia_tipo': forms.RadioSelect(),
             'horario_fijo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 08:00 hs'}),
-            'evento_toma': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: al levantarse'}),
+            'evento_toma': forms.Select(
+                choices=[('', '-- Seleccionar rutina --'),('desayuno', 'En el Desayuno'),('almuerzo', 'En el Almuerzo'),('cena', 'En la Cena'),('antes_dormir', 'Antes de Dormir'),],attrs={'class': 'form-control'}),
             'duracion_tipo': forms.RadioSelect(),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'stock_actual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
@@ -122,7 +123,27 @@ class MedicamentoForm(forms.ModelForm):
                     f"Inconsistencia en los datos: La unidad de medida '{nom_unidad}' "
                     f"no corresponde para una presentación de tipo '{nom_presentacion}'."
                 )
+
+        # 💡 2. NUEVA REGLA MATEMÁTICA: Validación de dosis físicas
+        dosis = cleaned_data.get('dosis_por_toma')
+        
+        if tipo_presentacion and dosis is not None:
+            # Regla para GOTAS: Solo números enteros (no podés tomar media gota)
+            if tipo_presentacion == 'gota':
+                if dosis % 1 != 0:
+                    raise forms.ValidationError(
+                        "No se pueden fraccionar las gotas. Ingresá un número entero (Ej: 1, 2, 5)."
+                    )
+            
+            # Regla para COMPRIMIDOS: Solo enteros, mitades (0.5) o cuartos (0.25)
+            elif tipo_presentacion == 'comprimido':
+                fraccion = dosis % 1
+                if fraccion not in [0.0, 0.25, 0.5, 0.75]:
+                    raise forms.ValidationError(
+                        "Para comprimidos o pastillas, los decimales solo pueden ser cuartos (0.25) o mitades (0.5)."
+                    )
                 
+        # 3. Validación de consistencia del Stock
         stock_total = cleaned_data.get('stock_total')
         umbral = cleaned_data.get('umbral_stock_minimo')
 
@@ -133,7 +154,6 @@ class MedicamentoForm(forms.ModelForm):
                 )
 
         return cleaned_data
-
 
 class SubirFotoForm(forms.ModelForm):
     class Meta:
