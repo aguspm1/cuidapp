@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'cuidapp.wsgi.application'
 # La encontrás en el dashboard de Neon → tu proyecto → "Connection string".
 # Tiene esta forma: postgresql://usuario:password@ep-algo.neon.tech/neondb?sslmode=require
 
-NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_kuD0Omh5vPcJ@ep-misty-darkness-atf4eo0v.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require'
+NEON_DATABASE_URL = 'postgresql://PEGA_ACA_TU_CONNECTION_STRING_DE_NEON'
 
 DATABASES = {
     'default': dj_database_url.parse(
@@ -162,11 +162,11 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
 # dj3-cloudinary-storage (versión vieja) todavía lee esta variable "legacy"
 # en vez del diccionario STORAGES de arriba. La dejamos en sincro con
 # STORAGES["staticfiles"] para que su comando de collectstatic no explote.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
