@@ -126,7 +126,7 @@ USE_TZ = True
 # ── Archivos estáticos (CSS/JS del panel web) ────────────────────────
 # Whitenoise los sirve directo desde Render, sin necesitar otro servicio.
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'core', 'static'),]
 
@@ -169,4 +169,4 @@ STORAGES = {
 # dj3-cloudinary-storage (versión vieja) todavía lee esta variable "legacy"
 # en vez del diccionario STORAGES de arriba. La dejamos en sincro con
 # STORAGES["staticfiles"] para que su comando de collectstatic no explote.
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
