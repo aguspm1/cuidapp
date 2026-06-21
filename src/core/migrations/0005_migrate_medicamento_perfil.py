@@ -9,7 +9,7 @@ def migrate_usuario_to_perfil(apps, schema_editor):
     cursor.execute(
         """
         INSERT INTO core_perfil (user_id, rol, tutor_asignado_id)
-        SELECT DISTINCT usuario_id, 'tutor', NULL
+        SELECT DISTINCT usuario_id, 'tutor', NULL::integer
         FROM core_medicamento
         WHERE usuario_id IS NOT NULL
           AND usuario_id NOT IN (SELECT user_id FROM core_perfil)
