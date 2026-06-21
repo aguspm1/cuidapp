@@ -2,9 +2,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.routers import DefaultRouter
 from core import views
 from core import api_views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+router = DefaultRouter()
+router.register(r'eventos', api_views.EventoCalendarioViewSet, basename='evento')
  
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -62,11 +66,15 @@ urlpatterns = [
     path('api/medicamentos/<int:medicamento_id>/registrar-toma/', api_views.registrar_toma_api, name='api_registrar_toma'),
     path('api/documentos/subir/', api_views.subir_foto_api, name='api_subir_foto'),
     path('api/v1/dispositivo/', api_views.registrar_dato_dispositivo, name='api_dispositivo'),
+    path('api/v1/mensajes/<int:otro_id>/', api_views.chat_mensajes, name='api_chat_mensajes'),
 
     # ↓ NUEVO: detalle de un paciente puntual, para la vista del cuidador
     path('api/v1/pacientes/<int:paciente_id>/dispositivo/', api_views.detalle_paciente_dispositivo, name='api_paciente_dispositivo'),
     path('api/v1/pacientes/<int:paciente_id>/fotos/', api_views.detalle_paciente_fotos, name='api_paciente_fotos'),
     path('api/v1/pacientes/<int:paciente_id>/medicamentos/', api_views.detalle_paciente_medicamentos, name='api_paciente_medicamentos'),
+    path('api/v1/fotos/<int:foto_id>/revisar/', api_views.marcar_foto_revisada, name='api_marcar_foto_revisada'),
+
+    path('api/v1/', include(router.urls)),
 
 # Sirve archivos de media (imágenes/PDFs subidos) en modo desarrollo
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

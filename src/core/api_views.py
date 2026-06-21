@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -16,7 +16,8 @@ from .models import (
     RegistroToma, 
     FotoDocumento,
     PerfilTutor,
-    DatoDispositivo
+    DatoDispositivo,
+    Mensaje
 )
 
 # IMPORTACIÓN DE SERIALIZADORES
@@ -26,7 +27,8 @@ from .serializers import (
     EventoCalendarioSerializer,
     NotificacionSerializer,
     FotoDocumentoSerializer,
-    DatoDispositivoSerializer
+    DatoDispositivoSerializer,
+    MensajeSerializer
 )
 
 
@@ -65,6 +67,7 @@ def me(request):
             'perfil': PerfilPacienteSerializer(perfil).data,
         })
     elif es_tutor(user):
+        tutor_perfil = PerfilTutor.objects.filter(user=user).first()
         return Response({
             'rol': 'cuidador',
             'perfil': {
@@ -73,6 +76,8 @@ def me(request):
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
+                'telefono': tutor_perfil.telefono if tutor_perfil else '',
+                'parentesco': tutor_perfil.parentesco if tutor_perfil else '',
             }
         })
     return Response({'status': 'error', 'mensaje': 'Usuario incompleto o sin rol asignado.'}, status=400)
@@ -128,7 +133,7 @@ def mis_pacientes_api(request):
     # Buscamos los pacientes que tienen a este usuario en su lista ManyToMany 'tutores'
     pacientes = PerfilPaciente.objects.filter(tutores=user)
     
-    return Response(PerfilPacienteSerializer(pacientes, many=True).data)
+    return Response(PerfilPacienteSerializer(pacientes, many=True, context={'request': request}).data)
 
 
 @api_view(['POST'])
@@ -278,6 +283,24 @@ def detalle_paciente_fotos(request, paciente_id):
     return Response(FotoDocumentoSerializer(fotos, many=True, context={'request': request}).data)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def marcar_foto_revisada(request, foto_id):
+    """El cuidador marca un documento/foto como ya revisado desde la app."""
+    foto = get_object_or_404(FotoDocumento, pk=foto_id)
+    perfil = _validar_tutor_de(request, foto.paciente_id)
+    if not perfil:
+        return Response({'status': 'error', 'mensaje': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+
+    foto.procesada = True
+    nota = (request.data.get('nota') or '').strip()
+    if nota:
+        foto.nota_tutor = nota
+    foto.save()
+
+    return Response(FotoDocumentoSerializer(foto, context={'request': request}).data)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def detalle_paciente_medicamentos(request, paciente_id):
@@ -289,3 +312,125 @@ def detalle_paciente_medicamentos(request, paciente_id):
     medicamentos = Medicamento.objects.filter(paciente_id=paciente_id, activo=True)
     return Response(MedicamentoSerializer(medicamentos, many=True).data)
 
+
+class EventoCalendarioViewSet(viewsets.ModelViewSet):
+    serializer_class = EventoCalendarioSerializer
+
+    def get_queryset(self):
+        paciente_id = self.request.query_params.get('paciente_id', None)
+        if paciente_id:
+            return EventoCalendario.objects.filter(paciente__id=paciente_id).order_by('fecha_hora')
+        return EventoCalendario.objects.filter(paciente=self.request.user).order_by('fecha_hora')
+
+    def perform_create(self, serializer):
+        # Si quien crea el turno es un tutor, el evento queda a nombre del paciente
+        # que esté viendo (paciente_id en query params); si no, es el propio usuario.
+        paciente_id = self.request.query_params.get('paciente_id') or self.request.data.get('paciente_id')
+        paciente_target = self.request.user
+        if paciente_id:
+            paciente_target = get_object_or_404(PerfilPaciente, user_id=paciente_id).user
+
+        evento = serializer.save(paciente=paciente_target)
+        self._notificar_evento(evento, creado=True)
+        return evento
+
+    def perform_update(self, serializer):
+        evento = serializer.save()
+        self._notificar_evento(evento, creado=False)
+        return evento
+
+    def _notificar_evento(self, evento, creado=True):
+        """Avisa al paciente y a sus cuidadores que hay un turno nuevo o modificado."""
+        accion = 'Nuevo turno agendado' if creado else 'Turno actualizado'
+        fecha_str = timezone.localtime(evento.fecha_hora).strftime('%d/%m a las %H:%M')
+
+        Notificacion.objects.create(
+            usuario=evento.paciente,
+            tipo='evento',
+            titulo=accion,
+            mensaje=f'{evento.titulo} - {fecha_str}',
+            referencia_id=evento.id
+        )
+
+        perfil = PerfilPaciente.objects.filter(user=evento.paciente).first()
+        if perfil:
+            nombre_paciente = evento.paciente.get_full_name() or evento.paciente.username
+            for tutor in perfil.tutores.all():
+                Notificacion.objects.create(
+                    usuario=tutor,
+                    tipo='evento',
+                    titulo=f'{accion} para {nombre_paciente}',
+                    mensaje=f'{evento.titulo} - {fecha_str}',
+                    referencia_id=evento.id
+                )
+
+
+# =======================================================
+# ===================== CHAT ==========================
+# =======================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def chat_mensajes(request, otro_id):
+    """
+    Hilo de chat entre un paciente y un cuidador puntual.
+    - Si quien llama es el paciente: otro_id = id del cuidador.
+    - Si quien llama es el cuidador: otro_id = id del paciente.
+    GET: trae el historial y marca como leídos los mensajes recibidos.
+    POST: envía un mensaje nuevo (campo 'texto').
+    """
+    user = request.user
+
+    if es_paciente(user):
+        paciente_id = user.id
+        cuidador_id = otro_id
+        perfil = PerfilPaciente.objects.filter(user=user).first()
+        if not perfil or not perfil.tutores.filter(id=cuidador_id).exists():
+            return Response({'status': 'error', 'mensaje': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+    elif es_tutor(user):
+        paciente_id = otro_id
+        cuidador_id = user.id
+        perfil = PerfilPaciente.objects.filter(user_id=paciente_id).first()
+        if not perfil or not perfil.tutores.filter(id=user.id).exists():
+            return Response({'status': 'error', 'mensaje': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        return Response({'status': 'error', 'mensaje': 'Rol no reconocido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'POST':
+        texto = (request.data.get('texto') or '').strip()
+        if not texto:
+            return Response({'status': 'error', 'mensaje': 'El mensaje no puede estar vacío.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        mensaje = Mensaje.objects.create(
+            paciente_id=paciente_id,
+            cuidador_id=cuidador_id,
+            remitente=user,
+            texto=texto
+        )
+
+        # ── Avisamos al destinatario con el sistema de notificaciones existente ──
+        destinatario_id = cuidador_id if user.id == paciente_id else paciente_id
+        nombre_remitente = user.get_full_name() or user.username
+        Notificacion.objects.create(
+            usuario_id=destinatario_id,
+            tipo='mensaje',
+            titulo=f'Nuevo mensaje de {nombre_remitente}',
+            mensaje=texto[:140],
+            referencia_id=user.id
+        )
+
+        return Response(
+            MensajeSerializer(mensaje, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    # ── GET: historial completo del hilo ──────────────────────────────
+    mensajes = Mensaje.objects.filter(
+        paciente_id=paciente_id,
+        cuidador_id=cuidador_id
+    ).order_by('fecha_envio')
+
+    # Marcamos como leídos los mensajes que no escribió el usuario actual
+    mensajes.exclude(remitente=user).filter(leido=False).update(leido=True)
+
+    return Response(MensajeSerializer(mensajes, many=True, context={'request': request}).data)

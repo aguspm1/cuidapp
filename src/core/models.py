@@ -24,7 +24,11 @@ class PerfilPaciente(models.Model):
     user   = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_medico')
     tutor  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='pacientes_a_cargo')  # Mantenido por compatibilidad
     tutores = models.ManyToManyField(User, related_name='pacientes_vinculados', blank=True, verbose_name='Tutores asignados')
-
+    tutor_emergencia = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='pacientes_emergencia',
+        verbose_name='Contacto de emergencia'
+    )
     fecha_nacimiento     = models.DateField(null=True, blank=True)
     grupo_sanguineo      = models.CharField(max_length=5, blank=True)
     alergias             = models.TextField(blank=True, verbose_name='Alergias Conocidas')
@@ -323,3 +327,28 @@ class DatoDispositivo(models.Model):
 
     def __str__(self):
         return f"Dispositivo de {self.paciente.username} ({self.bateria}%)"
+
+
+# ============================================================
+# 6. MENSAJERÍA (Chat abuelo ↔ cuidador)
+# ============================================================
+
+class Mensaje(models.Model):
+    """
+    Un hilo de chat queda definido por el par (paciente, cuidador),
+    sin importar quién haya enviado cada mensaje individual.
+    """
+    paciente   = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_paciente')
+    cuidador   = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_cuidador')
+    remitente  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensajes_enviados')
+    texto      = models.TextField()
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+    leido      = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['fecha_envio']
+        verbose_name = 'Mensaje'
+        verbose_name_plural = 'Mensajes'
+
+    def __str__(self):
+        return f"{self.remitente.username} -> ({self.paciente.username}/{self.cuidador.username}): {self.texto[:30]}"

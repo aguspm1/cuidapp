@@ -11,6 +11,7 @@ from datetime import timedelta
 from django.core.paginator import Paginator
 from .models import Medicamento, EventoCalendario, PerfilPaciente, FotoDocumento, DatoMedicion, RegistroToma, Notificacion, PerfilTutor, HorarioToma
 from .forms import RegistroForm, MedicamentoForm, PerfilPacienteForm, SubirFotoForm, PerfilTutorForm
+from .serializers import EventoCalendarioSerializer
 
 
 # ========== HELPERS REFACTORIZADOS (CORREGIDO) ==========
@@ -632,7 +633,16 @@ def editar_perfil(request, paciente_id):
                 perfil_actualizado.contacto_emergencia = request.POST.get('contacto_emergencia_manual', '')
             elif contacto_seleccionado:
                 perfil_actualizado.contacto_emergencia = contacto_seleccionado
-            
+
+            # 🆘 Contacto de emergencia "real" (FK), el que usa la app para el botón de llamada.
+            # Se setea con un <select name="tutor_emergencia_id"> que liste los tutores vinculados.
+            tutor_emergencia_id = request.POST.get('tutor_emergencia_id')
+            if tutor_emergencia_id:
+                if tutores.filter(id=tutor_emergencia_id).exists():
+                    perfil_actualizado.tutor_emergencia_id = tutor_emergencia_id
+            else:
+                perfil_actualizado.tutor_emergencia = None
+
             perfil_actualizado.save()
             messages.success(request, '💾 Cambios del perfil guardados con éxito.')
             return redirect('perfil_paciente')

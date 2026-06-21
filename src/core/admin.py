@@ -17,7 +17,7 @@ class PerfilTutorAdmin(admin.ModelAdmin):
 
 @admin.register(PerfilPaciente)
 class PerfilPacienteAdmin(admin.ModelAdmin):
-    list_display = ('user', 'tutor', 'fecha_nacimiento', 'obra_social')
+    list_display = ('user', 'tutor', 'fecha_nacimiento', 'obra_social', 'tutor_emergencia')
     search_fields = ('user__username', 'tutor__username', 'user__first_name')
     list_filter = ('requiere_control_presion', 'requiere_control_glucosa', 'requiere_control_peso')
 

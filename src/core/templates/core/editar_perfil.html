@@ -64,6 +64,24 @@
                         {{ form.telefono_emergencia }}
                     </div>
                 </div>
+
+                <div class="form-group mb-20">
+                    <label class="data-label">📱 Contacto de emergencia para la App (botón de llamada):</label>
+                    <select name="tutor_emergencia_id" id="select_tutor_emergencia" class="form-control">
+                        <option value="">-- Sin contacto de emergencia en la App --</option>
+                        {% for tutor in tutores %}
+                            <option value="{{ tutor.id }}"
+                                    {% if perfil.tutor_emergencia_id == tutor.id %}selected{% endif %}>
+                                {{ tutor.get_full_name|default:tutor.username }}
+                                {% if tutor.perfil_tutor %} ({{ tutor.perfil_tutor.parentesco }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <p class="m-0 mt-10 text-muted" style="font-size: 0.85rem;">
+                        Este es el cuidador al que se llama automáticamente al tocar el botón rojo de "Emergencia" en la app del abuelo. Es independiente del contacto de arriba (que es solo informativo).
+                    </p>
+                </div>
+
                 <div class="form-group m-0">
                     <label class="data-label">Médico de Cabecera:</label>
                     {{ form.medico_cabecera }}
