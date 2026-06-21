@@ -158,16 +158,14 @@ class MedicamentoForm(forms.ModelForm):
 class SubirFotoForm(forms.ModelForm):
     class Meta:
         model = FotoDocumento
-        fields = ['tipo', 'imagen', 'nota_paciente']
+        fields = ['tipo', 'imagen']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-control', 'style': 'padding: 10px; width: 100%; border-radius: 6px;'}),
             'imagen': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*,application/pdf'}),
-            'nota_paciente': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ej: Dejo la orden de la obra social...', 'style': 'width: 100%; border-radius: 6px; padding: 10px;'}),
         }
         labels = {
             'tipo': '¿Qué tipo de documento es?',
             'imagen': 'Seleccionar Foto o PDF',
-            'nota_paciente': 'Nota del paciente (opcional)',
         }
 
 class PerfilTutorForm(forms.ModelForm):

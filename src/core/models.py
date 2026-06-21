@@ -297,7 +297,6 @@ class FotoDocumento(models.Model):
     tipo          = models.CharField(max_length=20, choices=TIPO_CHOICES, default='medicion')
     fecha_subida  = models.DateTimeField(auto_now_add=True)
     procesada     = models.BooleanField(default=False)
-    nota_paciente = models.CharField(max_length=255, blank=True)
     nota_tutor    = models.CharField(max_length=255, blank=True)
 
     class Meta:
