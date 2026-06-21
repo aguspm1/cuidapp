@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: bash build.sh
-    startCommand: gunicorn cuidapp.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+    startCommand: cd src && gunicorn -w 3 --bind 0.0.0.0:$PORT cuidapp.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
