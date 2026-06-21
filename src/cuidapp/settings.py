@@ -165,3 +165,8 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# dj3-cloudinary-storage (versión vieja) todavía lee esta variable "legacy"
+# en vez del diccionario STORAGES de arriba. La dejamos en sincro con
+# STORAGES["staticfiles"] para que su comando de collectstatic no explote.
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
