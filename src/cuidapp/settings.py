@@ -170,3 +170,8 @@ STORAGES = {
 # en vez del diccionario STORAGES de arriba. La dejamos en sincro con
 # STORAGES["staticfiles"] para que su comando de collectstatic no explote.
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# El panel "browsable" de Django REST Framework trae un bootstrap.min.css
+# que referencia fuentes .eot que no vienen incluidas en el paquete.
+# Sin esto, collectstatic explota por un archivo que no afecta nada funcional.
+WHITENOISE_MANIFEST_STRICT = False
