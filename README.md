@@ -8,18 +8,18 @@ El objetivo principal de **Cuida APP** es reducir la brecha tecnológica, facili
 
 ## 👥 Vinculación de Roles
 
-El sistema opera bajo un ecosistema dual que conecta al cuidador con el entorno del paciente:
+El sistema opera bajo un ecosistema integral que conecta al cuidador tanto en la web como en el entorno móvil con el adulto mayor:
 
-*   **Tutor (Perfil Administrativo / Entorno Web):** Responsable de la gestión integral a través de un tablero de control centralizado. Desde aquí administra datos del paciente, programa medicaciones, gestiona la agenda de eventos y monitorea el estado del dispositivo de las personas a su cargo.
-*   **Paciente (Perfil Asistido / Entorno Móvil):** Receptor del cuidado, puede tener varios tutores. Cuenta con una aplicación móvil de diseño simplificado que le permite visualizar sus pautas diarias y emitir alertas inmediatas ante situaciones de emergencia.
+*   **Cuidador (Perfil de Monitoreo y Gestión - Entorno Web / Móvil):** Responsable de la supervisión a través de un tablero web centralizado y una vista adaptada en la app móvil. Desde allí administra datos, programa medicamentos, gestiona turnos médicos y monitorea la telemetría del dispositivo de los adultos mayores a su cargo.
+*   **Abuelo (Perfil Asistido / Entorno Móvil):** Receptor del cuidado,  puede estar vinculado a varios cuidadores. Cuenta con una interfaz móvil sumamente simplificada que le permite registrar sus tomas diarias, visualizar recordatorios visuales estáticos y emitir alertas inmediatas ante emergencias.
 
 ---
 
 ## 🎨 Diseño y Accesibilidad
 
 *   **👁️ Identificación Visual:** Sistema de iconografía unificado para diferenciar las secciones y reconocer las funciones principales de forma instintiva.
-*   **💻 Optimización Web (Panel del Tutor):** Menú de acceso rápido que centraliza la gestión en un solo espacio. Permite visualizar de manera inmediata el stock de medicamentos disponibles y los eventos más próximos. Además, incorpora un panel de notificaciones en tiempo real.
-*   **📱 Accesibilidad Móvil (App del Paciente):** Interfaz móvil adaptada con densidad de botones reducida, tipografías escaladas e iconografía de gran tamaño para evitar errores involuntarios de pulsación.
+*   **💻 Optimización Web (Panel del Cuidador):** Menú de acceso rápido que centraliza la gestión en un solo espacio. Permite visualizar de manera inmediata el stock de medicamentos disponibles y los eventos más próximos. Además, incorpora un panel de notificaciones en tiempo real.
+*   **📱 Accesibilidad Móvil: App del Abuelo** Interfaz adaptada con densidad de botones reducida, tipografías escaladas e iconografía de gran tamaño para evitar errores involuntarios de pulsación. **App del cuidador** Permite comunicarse con sus abuelos a cargo y poder monitorear los datos cargados en el perfil.
 
 ---
 
@@ -48,6 +48,14 @@ Centraliza las imágenes capturadas por el paciente para que el tutor las proces
 ### 📊 Mediciones Clínicas
 *   Panel donde el tutor visualiza la **evolución gráfica** de las variables de salud registradas por el paciente. El sistema está parametrizado para el control de glucosa, presión arterial y peso corporal.
 
+### 💊 Control de Medicamentos y Alarmas
+* Visualización de la pauta de tratamiento activa, indicando con claridad la hora de la siguiente toma del abuelo. 
+* **Cuidador:** Carga y control del stock y cantidades para la organización centralizada de las alarmas.
+* **Abuelo:** Interfaz adaptada con alertas visuales aumentadas que confirman el registro de la toma efectiva del fármaco.
+
+### 📸 Gestión de Archivos y Almacenamiento en la Nube
+* Módulo de captura y carga multimedia que permite al abuelo fotografiar recetas, indicaciones o pantallas de dispositivos clínicos (tensiómetros/balanzas). La app envía los archivos de forma optimizada hacia el servidor para su persistencia en la nube y posterior procesamiento gráfico.
+
 ---
 
 ## 🛠️ Stack Tecnológico
@@ -55,15 +63,16 @@ Centraliza las imágenes capturadas por el paciente para que el tutor las proces
 | Componente | Tecnología | Descripción |
 | :--- | :--- | :--- |
 | **Backend / API Server** | Python 3.x & Django 5.x | Arquitectura dual: MVT para la web y Django REST Framework (DRF) para la app móvil. |
-| **App Móvil (Paciente)** | Flutter & Dart | Interfaz nativa cross-platform de alta accesibilidad y alto rendimiento. |
+| **App Móvil (Abuelo / Cuidador)** | Flutter & Dart | Interfaz nativa cross-platform de alta accesibilidad y alto rendimiento. |
 | **Panel Web (Tutor)** | HTML5, CSS3 & JavaScript | Frontend modular con manipulación dinámica del DOM (Vanilla JS). |
 | **Base de Datos** | SQLite | Diseño relacional estructurado para la persistencia de usuarios y métricas. |
 | **Integraciones** | FullCalendar API | Renderizado dinámico e interactivo de la agenda médica en la web. |
+| **Infraestructura Cloud** | Render, Neon (PostgreSQL) & Cloudinary |
 
 ---
 
 ## 🔄 Flujo de Comunicación (Django ⇄ Flutter)
 
-*   **Consumo de APIs Asincrónicas:** La aplicación en Flutter se conecta mediante peticiones HTTP a los endpoints de Django. Al registrar una acción (como la toma de un medicamento o un botón de alerta), se envía un paquete JSON que el backend procesa para notificar al instante en el panel del tutor.
+*   **Consumo de APIs Asincrónicas:** La aplicación en Flutter se conecta de forma segura a la URL de producción alojada en Render. Al registrar una acción (como la telemetría automática del teléfono, la subida de un documento multimedia o el registro de la toma de un medicamento), se despacha un JSON que impacta en la base de datos PostgreSQL de Neon para actualizar instantáneamente las pantallas de monitoreo.
 * *   **Sincronización de Agenda:** Los eventos programados por el tutor en el calendario web se serializan en formato JSON, permitiendo que la app del paciente los reciba y los parsee localmente para configurar los recordatorios en el teléfono. Para evitar descalces horarios, los datos se procesan bajo un esquema **Timezone Aware (Huso Horario Local)**.
 
