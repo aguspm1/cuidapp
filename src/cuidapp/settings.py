@@ -27,7 +27,7 @@ ALLOWED_HOSTS = ['*']
 # Sin CSRF_TRUSTED_ORIGINS el login del panel admin falla con 403.
 # Reemplazá 'cuidapp' por el nombre real de tu app en Render.
 CSRF_TRUSTED_ORIGINS = [
-    'https://cuidapp.onrender.com',  # ← cambiá por tu URL real de Render
+    'https://cuidapp-mzne.onrender.com',
 ]
 
 # Le dice a Django que confíe en el header X-Forwarded-Proto que manda
@@ -139,7 +139,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'core', 'static'),]
+#STATICFILES_DIRS = [BASE_DIR, 'core', 'static'),]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
