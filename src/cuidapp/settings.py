@@ -23,6 +23,17 @@ DEBUG = False
 # poner el dominio exacto de Render acá, ej: ['cuidapp.onrender.com']
 ALLOWED_HOSTS = ['*']
 
+# ── CSRF y HTTPS (necesario en Render detrás de proxy SSL) ───────────
+# Sin CSRF_TRUSTED_ORIGINS el login del panel admin falla con 403.
+# Reemplazá 'cuidapp' por el nombre real de tu app en Render.
+CSRF_TRUSTED_ORIGINS = [
+    'https://cuidapp.onrender.com',  # ← cambiá por tu URL real de Render
+]
+
+# Le dice a Django que confíe en el header X-Forwarded-Proto que manda
+# Render, para que sepa que la conexión es HTTPS (y no trate el CSRF como inseguro).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 
@@ -158,15 +169,13 @@ CLOUDINARY_STORAGE = {
 }
 
 STORAGES = {
+    # Media (fotos, documentos) → Cloudinary
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
+    # Estáticos (CSS/JS del panel web) → Whitenoise los sirve desde Render
+    # IMPORTANTE: en Django 4.2+ solo cuenta este dict; STATICFILES_STORAGE se ignora.
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
-
-# dj3-cloudinary-storage (versión vieja) todavía lee esta variable "legacy"
-# en vez del diccionario STORAGES de arriba. La dejamos en sincro con
-# STORAGES["staticfiles"] para que su comando de collectstatic no explote.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
