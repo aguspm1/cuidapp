@@ -177,7 +177,7 @@ STORAGES = {
     # Usamos StaticFilesStorage (sin compresión) porque whitenoise==6.11.0 tiene
     # un bug con CompressedStaticFilesStorage que rompe el collectstatic en el build.
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
@@ -185,4 +185,4 @@ STORAGES = {
 # collectstatic lee settings.STATICFILES_STORAGE directamente (ignorando STORAGES).
 # Si esta variable no existe, el build falla con AttributeError.
 # Django 6 la ignora; solo existe para que el paquete viejo no explote.
-STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
