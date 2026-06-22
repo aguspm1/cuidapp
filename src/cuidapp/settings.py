@@ -174,8 +174,15 @@ STORAGES = {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     # Estáticos (CSS/JS del panel web) → Whitenoise los sirve desde Render
-    # IMPORTANTE: en Django 4.2+ solo cuenta este dict; STATICFILES_STORAGE se ignora.
+    # Django 6 usa este dict; STATICFILES_STORAGE abajo es solo para compatibilidad
+    # con dj3-cloudinary-storage que aún lee la variable legacy directamente.
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
+# ⚠️ NO eliminar: dj3-cloudinary-storage==0.0.6 tiene un bug donde su comando
+# collectstatic lee settings.STATICFILES_STORAGE directamente (ignorando STORAGES).
+# Si esta variable no existe, el build falla con AttributeError.
+# Django 6 la ignora; solo existe para que el paquete viejo no explote.
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
